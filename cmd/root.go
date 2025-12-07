@@ -23,5 +23,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Version = "0.0.1"
+	rootCmd.Version = "0.1.0"
 }

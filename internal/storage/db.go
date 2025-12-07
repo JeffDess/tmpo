@@ -90,13 +90,13 @@ func (d* Database) CreateEntry(projectName, description string) (*TimeEntry, err
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create entry: %w", err)
+		return nil, fmt.Errorf("failed to create entry: %w", err)
 	}
 	
 	id, err := result.LastInsertId()
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get last insert id: %w", err)
+		return nil, fmt.Errorf("failed to get last insert id: %w", err)
 	}
 
 	return d.GetEntry(id)
@@ -129,7 +129,7 @@ func (d* Database) GetRunningEntry() (*TimeEntry, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get running entry: %w", err)
+		return nil, fmt.Errorf("failed to get running entry: %w", err)
 	}
 
 	if endTime.Valid {
