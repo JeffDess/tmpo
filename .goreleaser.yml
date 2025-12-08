@@ -91,7 +91,7 @@ release:
   github:
     owner: DylanDevelops
     name: tmpo
-  draft: false
+  draft: true # Turn to false when first release is ready
   prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
 
