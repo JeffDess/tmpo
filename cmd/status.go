@@ -14,7 +14,7 @@ var statusCmd = &cobra.Command{
 	Short: "Show current tracking status",
 	Long:  `Display information about the currently running time tracking session.`,
 
-	Run: func(cmd* cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		db, err := storage.Initialize()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)

@@ -20,7 +20,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a .tmporc config file",
 	Long:  `Create a .tmporc configuration file in the current directory.`,
-	Run: func(cmd* cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(".tmporc"); err == nil {
 			fmt.Println("Error: .tmporc already exists in this directory")
 

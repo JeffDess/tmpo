@@ -19,7 +19,7 @@ import (
 // with a nil internal pointer is not usable — it must be initialized
 // (for example via sql.Open) and closed when no longer needed.
 type Database struct {
-	db* sql.DB
+	db *sql.DB
 }
 
 // Initialize ensures the on-disk storage for the application exists, opens the
@@ -81,7 +81,7 @@ func Initialize() (*Database, error) {
 // the created *TimeEntry (retrieved by querying the database for the last insert id).
 // If the insert or the subsequent retrieval fails, an error wrapping the underlying
 // database error is returned.
-func (d* Database) CreateEntry(projectName, description string) (*TimeEntry, error) {
+func (d *Database) CreateEntry(projectName, description string) (*TimeEntry, error) {
 	result, err := d.db.Exec(
 		"INSERT INTO time_entries (project_name, start_time, description) VALUES (?, ?, ?)",
 		projectName,
@@ -112,7 +112,7 @@ func (d* Database) CreateEntry(projectName, description string) (*TimeEntry, err
 // The function scans id, project_name, start_time, end_time and description into a
 // TimeEntry. The EndTime field on the returned TimeEntry is set only if the scanned
 // end_time is non-NULL (sql.NullTime.Valid).
-func (d* Database) GetRunningEntry() (*TimeEntry, error) {
+func (d *Database) GetRunningEntry() (*TimeEntry, error) {
 	var entry TimeEntry
 	var endTime sql.NullTime
 
@@ -144,7 +144,7 @@ func (d* Database) GetRunningEntry() (*TimeEntry, error) {
 // If the update fails (for example if the row does not exist or the database returns an error),
 // an error is returned wrapped with context. This method overwrites any existing end_time value
 // and does not return the updated entry or perform additional validation on id.
-func (d* Database) StopEntry(id int64) error {
+func (d *Database) StopEntry(id int64) error {
 	_, err := d.db.Exec(
 		"UPDATE time_entries SET end_time = ? WHERE id = ?",
 		time.Now(),
@@ -165,7 +165,7 @@ func (d* Database) StopEntry(id int64) error {
 // otherwise EndTime will point to the retrieved time value.
 // If no row is found or an error occurs during query/scan, an error is returned (wrapped with
 // the context "failed to get entry").
-func (d* Database) GetEntry(id int64) (*TimeEntry, error) {
+func (d *Database) GetEntry(id int64) (*TimeEntry, error) {
 	var entry TimeEntry
 	var endTime sql.NullTime
 
@@ -189,6 +189,6 @@ func (d* Database) GetEntry(id int64) (*TimeEntry, error) {
 // Close closes the Database, releasing any underlying resources.
 // It delegates to the wrapped database's Close method and returns any error encountered.
 // After Close is called, the Database must not be used for further operations.
-func (d* Database) Close() error {
+func (d *Database) Close() error {
 	return d.db.Close()
 }

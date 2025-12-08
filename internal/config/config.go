@@ -41,7 +41,7 @@ func Load(path string) (*Config, error) {
 // The configuration is encoded using yaml.Marshal and written with file mode 0644.
 // If a file already exists at path it will be overwritten. An error is returned
 // if marshaling fails or if writing the file to disk is unsuccessful.
-func (c* Config) Save(path string) error {
+func (c *Config) Save(path string) error {
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)

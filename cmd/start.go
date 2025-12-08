@@ -14,7 +14,7 @@ var startCmd = &cobra.Command{
 	Use:   "start [description]",
 	Short: "Start tracking time",
 	Long:  `Start a new time tracking session for the current project.`,
-	Run: func(cmd* cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		db, err := storage.Initialize()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
