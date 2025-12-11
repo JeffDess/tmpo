@@ -1,0 +1,141 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  # macOS (both Intel and Apple Silicon)
+  - id: macos
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    binary: tmpo
+    ldflags:
+      - -s -w
+      - -X github.com/DylanDevelops/tmpo/cmd.Version={{.Version}}
+      - -X github.com/DylanDevelops/tmpo/cmd.Commit={{.Commit}}
+      - -X github.com/DylanDevelops/tmpo/cmd.Date={{.Date}}
+
+  # Linux
+  - id: linux
+    goos: [linux]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=0
+    binary: tmpo
+    ldflags:
+      - -s -w
+      - -X github.com/DylanDevelops/tmpo/cmd.Version={{.Version}}
+      - -X github.com/DylanDevelops/tmpo/cmd.Commit={{.Commit}}
+      - -X github.com/DylanDevelops/tmpo/cmd.Date={{.Date}}
+
+  # Windows
+  - id: windows
+    goos: [windows]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=0
+    binary: tmpo
+    ldflags:
+      - -s -w
+      - -X github.com/DylanDevelops/tmpo/cmd.Version={{.Version}}
+      - -X github.com/DylanDevelops/tmpo/cmd.Commit={{.Commit}}
+      - -X github.com/DylanDevelops/tmpo/cmd.Date={{.Date}}
+
+archives:
+  - id: windows-zip
+    builds: [windows]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format: zip
+    files:
+      - README.md
+      - LICENSE
+
+  - id: unix-targz
+    builds: [macos, linux]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format: tar.gz
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: github-native
+  sort: asc
+  groups:
+    - title: ✨ Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 🐛 Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 🚀 Performance Improvements
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 🔨 Refactoring
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: 📚 Documentation
+      regexp: '^.*?docs?(\([[:word:]]+\))??!?:.+$'
+      order: 4
+    - title: 🔧 Build & Dependencies
+      regexp: '^.*?(build|ci)(\([[:word:]]+\))??!?:.+$'
+      order: 5
+    - title: 🧹 Maintenance
+      regexp: '^.*?chore(\([[:word:]]+\))??!?:.+$'
+      order: 6
+    - title: 📦 Other Changes
+      order: 999
+  filters:
+    exclude:
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - go mod tidy
+
+release:
+  github:
+    owner: DylanDevelops
+    name: tmpo
+  draft: true # Turn to false when first release is ready
+  prerelease: auto
+  name_template: "tmpo {{.Version}}"
+
+# Homebrew
+brews:
+  - name: tmpo
+    repository:
+      owner: DylanDevelops
+      name: tmpo
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    homepage: "https://github.com/DylanDevelops/tmpo"
+    description: "Minimal CLI time tracker for developers"
+    license: "MIT"
+    skip_upload: true # Turn to false when first release is ready
+    install: |
+      bin.install "tmpo"
+    test: |
+      system "#{bin}/tmpo", "--version"
