@@ -85,19 +85,25 @@ changelog:
     - title: ✨ Features
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 0
-    - title: 🐛 Fixes
+    - title: 🐛 Bug Fixes
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
-    - title: 📚 Docs & Chores
-      regexp: '^.*?(docs?|chore|style|refactor)(\([[:word:]]+\))??!?:.+$'
-      order: 2
-    - title: ⬆️ Dependencies
-      regexp: '^.*?(feat|fix|chore|build)\(deps?\):?.+$'
-      order: 3
-    - title: 🚀 Performance
+    - title: 🚀 Performance Improvements
       regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 🔨 Refactoring
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: 📚 Documentation
+      regexp: '^.*?docs?(\([[:word:]]+\))??!?:.+$'
       order: 4
-    - title: Other
+    - title: 🔧 Build & Dependencies
+      regexp: '^.*?(build|ci)(\([[:word:]]+\))??!?:.+$'
+      order: 5
+    - title: 🧹 Maintenance
+      regexp: '^.*?chore(\([[:word:]]+\))??!?:.+$'
+      order: 6
+    - title: 📦 Other Changes
       order: 999
   filters:
     exclude:
