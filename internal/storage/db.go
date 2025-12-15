@@ -110,6 +110,41 @@ func (d *Database) CreateEntry(projectName, description string, hourlyRate *floa
 	return d.GetEntry(id)
 }
 
+// CreateManualEntry inserts a completed time entry with specific start and end times.
+// Unlike CreateEntry which uses the current time and leaves end_time NULL, this method
+// creates a fully specified historical entry for manual record-keeping.
+// If hourlyRate is nil, the hourly_rate column will be set to NULL. On success it returns
+// the created *TimeEntry (retrieved by querying the database for the last insert id).
+// If the insert or the subsequent retrieval fails, an error wrapping the underlying
+// database error is returned.
+func (d *Database) CreateManualEntry(projectName, description string, startTime, endTime time.Time, hourlyRate *float64) (*TimeEntry, error) {
+	var rate sql.NullFloat64
+	if hourlyRate != nil {
+		rate = sql.NullFloat64{Float64: *hourlyRate, Valid: true}
+	}
+
+	result, err := d.db.Exec(
+		"INSERT INTO time_entries (project_name, start_time, end_time, description, hourly_rate) VALUES (?, ?, ?, ?, ?)",
+		projectName,
+		startTime,
+		endTime,
+		description,
+		rate,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create manual entry: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get last insert id: %w", err)
+	}
+
+	return d.GetEntry(id)
+}
+
 // GetRunningEntry retrieves the most recently started time entry that is still running
 // (i.e. has a NULL end_time) from the time_entries table. The query orders by
 // start_time descending and returns at most one row.
