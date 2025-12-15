@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/DylanDevelops/tmpo/internal/config"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +44,7 @@ var statsCmd = &cobra.Command{
 
 			start = now.AddDate(0, 0, -weekday+1).Truncate(24 * time.Hour)
 			end = start.AddDate(0, 0, 7)
-			periodName = "This week"
+			periodName = "This Week"
 		} else {
 			entries, err := db.GetEntries(0)
 			if err != nil {
@@ -94,28 +93,41 @@ func ShowPeriodStats(entries []*storage.TimeEntry, periodName string) {
 	}
 
 	projectStats := make(map[string]time.Duration)
+	projectEarnings := make(map[string]float64)
 	var totalDuration time.Duration
+	var totalEarnings float64
+	hasAnyEarnings := false
 
 	for _, entry := range entries {
 		duration := entry.Duration()
 		projectStats[entry.ProjectName] += duration
 		totalDuration += duration
+
+		if entry.HourlyRate != nil {
+			earnings := duration.Hours() * *entry.HourlyRate
+			projectEarnings[entry.ProjectName] += earnings
+			totalEarnings += earnings
+			hasAnyEarnings = true
+		}
 	}
 
 	fmt.Printf("\n[tmpo] Stats for %s\n\n", periodName)
 	fmt.Printf("    Total Time: %s (%.2f hours)\n", formatDuration(totalDuration), totalDuration.Hours())
-	fmt.Printf("    Total Entries: %d\n\n", len(entries))
+	fmt.Printf("    Total Entries: %d\n", len(entries))
 
+	if hasAnyEarnings {
+		fmt.Printf("    Total Estimated Earnings: $%.2f\n", totalEarnings)
+	}
+
+	fmt.Println()
 	fmt.Println("    By Project:")
 	for project, duration := range projectStats {
 		percentage := (duration.Seconds() / totalDuration.Seconds()) * 100
 		fmt.Printf("        %-20s  %s  (%.1f%%)\n", project, formatDuration(duration), percentage)
-	}
 
-	cfg, _, _ := config.FindAndLoad()
-	if cfg != nil && cfg.HourlyRate > 0 {
-		earnings := totalDuration.Hours() * cfg.HourlyRate
-		fmt.Printf("\n        Estimated Earnings: $%.2f (at $%.2f/hr)\n", earnings, cfg.HourlyRate)
+		if earnings, ok := projectEarnings[project]; ok && earnings > 0 {
+			fmt.Printf("        └─ Estimated Earnings: $%.2f\n", earnings)
+		}
 	}
 }
 
@@ -137,17 +149,27 @@ func ShowPeriodStats(entries []*storage.TimeEntry, periodName string) {
 func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	if len(entries) == 0 {
 		fmt.Println("No entries found.")
-		
+
 		return
 	}
 
 	projectStats := make(map[string]time.Duration)
+	projectEarnings := make(map[string]float64)
 	var totalDuration time.Duration
+	var totalEarnings float64
+	hasAnyEarnings := false
 
 	for _, entry := range entries {
 		duration := entry.Duration()
 		projectStats[entry.ProjectName] += duration
 		totalDuration += duration
+
+		if entry.HourlyRate != nil {
+			earnings := duration.Hours() * *entry.HourlyRate
+			projectEarnings[entry.ProjectName] += earnings
+			totalEarnings += earnings
+			hasAnyEarnings = true
+		}
 	}
 
 	projects, _ := db.GetAllProjects()
@@ -155,12 +177,21 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	fmt.Printf("\n[tmpo] All-Time Statistics\n")
 	fmt.Printf("    Total Time: %s (%.2f hours)\n", formatDuration(totalDuration), totalDuration.Hours())
 	fmt.Printf("    Total Entries: %d\n", len(entries))
-	fmt.Printf("    Projects Tracked: %d\n\n", len(projects))
+	fmt.Printf("    Projects Tracked: %d\n", len(projects))
 
+	if hasAnyEarnings {
+		fmt.Printf("    Total Estimated Earnings: $%.2f\n", totalEarnings)
+	}
+
+	fmt.Println()
 	fmt.Println("    By Project:")
 	for project, duration := range projectStats {
 		percentage := (duration.Seconds() / totalDuration.Seconds()) * 100
 		fmt.Printf("        %-20s  %s  (%.1f%%)\n", project, formatDuration(duration), percentage)
+
+		if earnings, ok := projectEarnings[project]; ok && earnings > 0 {
+			fmt.Printf("        └─ Estimated Earnings: $%.2f\n", earnings)
+		}
 	}
 }
 

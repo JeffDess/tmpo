@@ -65,7 +65,8 @@ func Initialize() (*Database, error) {
 			project_name TEXT NOT NULL,
 			start_time DATETIME NOT NULL,
 			end_time DATETIME,
-			description TEXT
+			description TEXT,
+			hourly_rate REAL
 		)
 	`)
 
@@ -77,22 +78,29 @@ func Initialize() (*Database, error) {
 }
 
 // CreateEntry inserts a new time entry for the specified projectName with the given
-// description. The entry's start_time is set to the current time. On success it returns
+// description and hourlyRate. The entry's start_time is set to the current time.
+// If hourlyRate is nil, the hourly_rate column will be set to NULL. On success it returns
 // the created *TimeEntry (retrieved by querying the database for the last insert id).
 // If the insert or the subsequent retrieval fails, an error wrapping the underlying
 // database error is returned.
-func (d *Database) CreateEntry(projectName, description string) (*TimeEntry, error) {
+func (d *Database) CreateEntry(projectName, description string, hourlyRate *float64) (*TimeEntry, error) {
+	var rate sql.NullFloat64
+	if hourlyRate != nil {
+		rate = sql.NullFloat64{Float64: *hourlyRate, Valid: true}
+	}
+
 	result, err := d.db.Exec(
-		"INSERT INTO time_entries (project_name, start_time, description) VALUES (?, ?, ?)",
+		"INSERT INTO time_entries (project_name, start_time, description, hourly_rate) VALUES (?, ?, ?, ?)",
 		projectName,
 		time.Now(),
 		description,
+		rate,
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create entry: %w", err)
 	}
-	
+
 	id, err := result.LastInsertId()
 
 	if err != nil {
@@ -109,20 +117,22 @@ func (d *Database) CreateEntry(projectName, description string) (*TimeEntry, err
 // If there is no running entry, GetRunningEntry returns (nil, nil). If the database
 // query or scan fails, it returns a non-nil error describing the failure.
 //
-// The function scans id, project_name, start_time, end_time and description into a
+// The function scans id, project_name, start_time, end_time, description and hourly_rate into a
 // TimeEntry. The EndTime field on the returned TimeEntry is set only if the scanned
-// end_time is non-NULL (sql.NullTime.Valid).
+// end_time is non-NULL (sql.NullTime.Valid). The HourlyRate field is set only if the scanned
+// hourly_rate is non-NULL (sql.NullFloat64.Valid).
 func (d *Database) GetRunningEntry() (*TimeEntry, error) {
 	var entry TimeEntry
 	var endTime sql.NullTime
+	var hourlyRate sql.NullFloat64
 
 	err := d.db.QueryRow(`
-		SELECT id, project_name, start_time, end_time, description
+		SELECT id, project_name, start_time, end_time, description, hourly_rate
 		FROM time_entries
 		WHERE end_time IS NULL
 		ORDER BY start_time DESC
 		LIMIT 1
-	`).Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description)
+	`).Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description, &hourlyRate)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -134,6 +144,10 @@ func (d *Database) GetRunningEntry() (*TimeEntry, error) {
 
 	if endTime.Valid {
 		entry.EndTime = &endTime.Time
+	}
+
+	if hourlyRate.Valid {
+		entry.HourlyRate = &hourlyRate.Float64
 	}
 
 	return &entry, nil
@@ -159,21 +173,23 @@ func (d *Database) StopEntry(id int64) error {
 }
 
 // GetEntry retrieves a TimeEntry by its ID from the database.
-// It queries the time_entries table for id, project_name, start_time, end_time and description,
+// It queries the time_entries table for id, project_name, start_time, end_time, description and hourly_rate,
 // scans the result into a TimeEntry value, and returns a pointer to it.
 // If the end_time column is NULL in the database, the returned TimeEntry.EndTime will be nil;
-// otherwise EndTime will point to the retrieved time value.
+// otherwise EndTime will point to the retrieved time value. If the hourly_rate column is NULL,
+// the returned TimeEntry.HourlyRate will be nil; otherwise HourlyRate will point to the retrieved value.
 // If no row is found or an error occurs during query/scan, an error is returned (wrapped with
 // the context "failed to get entry").
 func (d *Database) GetEntry(id int64) (*TimeEntry, error) {
 	var entry TimeEntry
 	var endTime sql.NullTime
+	var hourlyRate sql.NullFloat64
 
 	err := d.db.QueryRow(`
-		SELECT id, project_name, start_time, end_time, description
+		SELECT id, project_name, start_time, end_time, description, hourly_rate
 		FROM time_entries
 		WHERE id = ?
-	`, id).Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description)
+	`, id).Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description, &hourlyRate)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get entry: %w", err)
@@ -181,6 +197,10 @@ func (d *Database) GetEntry(id int64) (*TimeEntry, error) {
 
 	if endTime.Valid {
 		entry.EndTime = &endTime.Time
+	}
+
+	if hourlyRate.Valid {
+		entry.HourlyRate = &hourlyRate.Float64
 	}
 
 	return &entry, nil
@@ -191,14 +211,15 @@ func (d *Database) GetEntry(id int64) (*TimeEntry, error) {
 // It returns time entries ordered by start_time in descending order. If limit > 0,
 // at most `limit` entries are returned; if limit <= 0 all matching entries are returned.
 // Each returned element is a pointer to a TimeEntry. The EndTime field of a TimeEntry
-// will be nil when the corresponding end_time column in the database is NULL.
+// will be nil when the corresponding end_time column in the database is NULL. The HourlyRate
+// field will be nil when the corresponding hourly_rate column in the database is NULL.
 //
 // The function performs a SQL query selecting id, project_name, start_time, end_time,
-// and description. It returns a slice of entries and an error if the query or row
+// description and hourly_rate. It returns a slice of entries and an error if the query or row
 // scanning fails; any underlying error is wrapped.
 func (d *Database) GetEntries(limit int) ([]*TimeEntry, error) {
 	query := `
-		SELECT id, project_name, start_time, end_time, description
+		SELECT id, project_name, start_time, end_time, description, hourly_rate
 		FROM time_entries
 		ORDER BY start_time DESC
 	`
@@ -211,7 +232,7 @@ func (d *Database) GetEntries(limit int) ([]*TimeEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query entries: %w", err)
 	}
-	
+
 	defer rows.Close()
 
 	var entries []*TimeEntry
@@ -219,14 +240,19 @@ func (d *Database) GetEntries(limit int) ([]*TimeEntry, error) {
 	for rows.Next() {
 		var entry TimeEntry
 		var endTime sql.NullTime
+		var hourlyRate sql.NullFloat64
 
-		err := rows.Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description)
+		err := rows.Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description, &hourlyRate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan entry: %w", err)
 		}
 
 		if endTime.Valid {
 			entry.EndTime = &endTime.Time
+		}
+
+		if hourlyRate.Valid {
+			entry.HourlyRate = &hourlyRate.Float64
 		}
 
 		entries = append(entries, &entry)
@@ -240,6 +266,8 @@ func (d *Database) GetEntries(limit int) ([]*TimeEntry, error) {
 //
 // For each row a TimeEntry is populated. If the end_time column is NULL the returned
 // TimeEntry.EndTime will be nil; otherwise EndTime will point to the scanned time.Time.
+// If the hourly_rate column is NULL the returned TimeEntry.HourlyRate will be nil;
+// otherwise HourlyRate will point to the scanned float64.
 //
 // On success the function returns a slice of pointers to TimeEntry. If there are no
 // matching rows the returned slice will have length 0 (it may be nil). On failure the
@@ -247,7 +275,7 @@ func (d *Database) GetEntries(limit int) ([]*TimeEntry, error) {
 // query execution, row scanning, or row iteration.
 func (d *Database) GetEntriesByProject(projectName string) ([]*TimeEntry, error) {
 	rows, err := d.db.Query(`
-		SELECT id, project_name, start_time, end_time, description
+		SELECT id, project_name, start_time, end_time, description, hourly_rate
 		FROM time_entries
 		WHERE project_name = ?
 		ORDER BY start_time DESC
@@ -264,14 +292,19 @@ func (d *Database) GetEntriesByProject(projectName string) ([]*TimeEntry, error)
 	for rows.Next() {
 		var entry TimeEntry
 		var endTime sql.NullTime
+		var hourlyRate sql.NullFloat64
 
-		err := rows.Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description)
+		err := rows.Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description, &hourlyRate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan entry: %w", err)
 		}
 
 		if endTime.Valid {
 			entry.EndTime = &endTime.Time
+		}
+
+		if hourlyRate.Valid {
+			entry.HourlyRate = &hourlyRate.Float64
 		}
 
 		entries = append(entries, &entry)
@@ -284,10 +317,11 @@ func (d *Database) GetEntriesByProject(projectName string) ([]*TimeEntry, error)
 // Results are returned in descending order by start_time.
 // The provided start and end times are passed to the database driver as-is; callers should ensure they use the intended timezone/representation.
 // For rows with a NULL end_time the returned TimeEntry.EndTime will be nil; otherwise EndTime points to the parsed time value.
+// For rows with a NULL hourly_rate the returned TimeEntry.HourlyRate will be nil; otherwise HourlyRate points to the parsed float64.
 // Returns a slice of pointers to TimeEntry (which may be empty) or an error if the database query or row scanning fails.
 func (d *Database) GetEntriesByDateRange(start, end time.Time) ([]*TimeEntry, error) {
 	rows, err := d.db.Query(`
-		SELECT id, project_name, start_time, end_time, description
+		SELECT id, project_name, start_time, end_time, description, hourly_rate
 		FROM time_entries
 		WHERE start_time BETWEEN ? AND ?
 		ORDER BY start_time DESC
@@ -298,20 +332,25 @@ func (d *Database) GetEntriesByDateRange(start, end time.Time) ([]*TimeEntry, er
 	}
 
 	defer rows.Close()
-	
+
 	var entries []*TimeEntry
-	
+
 	for rows.Next() {
 		var entry TimeEntry
 		var endTime sql.NullTime
+		var hourlyRate sql.NullFloat64
 
-		err := rows.Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description)
+		err := rows.Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description, &hourlyRate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan entry: %w", err)
 		}
 
 		if endTime.Valid {
 			entry.EndTime = &endTime.Time
+		}
+
+		if hourlyRate.Valid {
+			entry.HourlyRate = &hourlyRate.Float64
 		}
 
 		entries = append(entries, &entry)
