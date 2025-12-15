@@ -5,13 +5,15 @@ import "time"
 // TimeEntry represents a recorded period of work on a project.
 // It includes a unique identifier, the project name, the start time,
 // an optional end time (nil indicates the entry is still in progress),
-// and a free-form description of the work performed.
+// a free-form description of the work performed, and an optional hourly rate
+// (nil indicates no rate was configured when the entry was created).
 type TimeEntry struct {
 	ID int64
 	ProjectName string
 	StartTime time.Time
 	EndTime *time.Time
 	Description string
+	HourlyRate *float64
 }
 
 // Duration returns the elapsed time for the TimeEntry.

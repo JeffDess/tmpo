@@ -32,7 +32,7 @@ var startCmd = &cobra.Command{
 		}
 
 		if running != nil {
-			fmt.Fprintf(os.Stderr, "Error: Already tracking time for `%s\n", running.ProjectName)
+			fmt.Fprintf(os.Stderr, "Error: Already tracking time for `%s`\n", running.ProjectName)
 			fmt.Println("Use 'tmpo stop' to stop the current session first.")
 
 			os.Exit(1)
@@ -41,16 +41,22 @@ var startCmd = &cobra.Command{
 		projectName, err := DetectProjectName()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error detecting project: %v\n", err)
-			
+
 			os.Exit(1)
 		}
-				
+
 		description := ""
 		if len(args) > 0 {
 			description = args[0]
 		}
 
-		entry, err := db.CreateEntry(projectName, description)
+		// Load config to get hourly rate if available
+		var hourlyRate *float64
+		if cfg, _, err := config.FindAndLoad(); err == nil && cfg != nil && cfg.HourlyRate > 0 {
+			hourlyRate = &cfg.HourlyRate
+		}
+
+		entry, err := db.CreateEntry(projectName, description, hourlyRate)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 
@@ -60,11 +66,11 @@ var startCmd = &cobra.Command{
 		fmt.Printf("[tmpo] Started tracking time for '%s'\n", entry.ProjectName)
 
 		if cfg, _, err := config.FindAndLoad(); err == nil && cfg != nil {
-			fmt.Println("    Source: .tmporc")
+			fmt.Println("    Config Source: .tmporc")
 		} else if project.IsInGitRepo() {
-			fmt.Println("    Source: git repository")
+			fmt.Println("    Config Source: git repository")
 		} else {
-			fmt.Println("    Source: directory name")
+			fmt.Println("    Config Source: directory name")
 		}
 
 		if description != "" {

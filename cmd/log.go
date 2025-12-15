@@ -82,9 +82,9 @@ var logCmd = &cobra.Command{
 			duration := entry.Duration()
 			totalDuration += duration
 
-			timeRange := entry.StartTime.Format("3:04 PM")
+			timeRange := entry.StartTime.Format("03:04 PM")
 			if entry.EndTime != nil {
-				timeRange += " - " + entry.EndTime.Format("3:04 PM")
+				timeRange += " - " + entry.EndTime.Format("03:04 PM")
 			} else {
 				timeRange += " - (running)"
 			}
