@@ -8,11 +8,11 @@
 
 ## Table of Contents
 
-1.  [Installation](#installation)
-2.  [Usage](#usage)
-3.  [Features](#features)
-4.  [Configuration](#configuration)
-5.  [License](#license)
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [Features](#features)
+4. [Configuration](#configuration)
+5. [License](#license)
 
 ---
 
@@ -79,7 +79,9 @@ tmpo stats
 ### Basic Commands
 
 #### `tmpo start [description]`
+
 Start tracking time for the current project. Automatically detects the project name from:
+
 1. `.tmporc` configuration file (if present)
 2. Git repository name
 3. Current directory name
@@ -90,6 +92,7 @@ tmpo start "Fix authentication bug"    # Start with description
 ```
 
 #### `tmpo stop`
+
 Stop the currently running time entry.
 
 ```bash
@@ -97,6 +100,7 @@ tmpo stop
 ```
 
 #### `tmpo status`
+
 View the current tracking session with elapsed time.
 
 ```bash
@@ -109,6 +113,7 @@ tmpo status
 ```
 
 #### `tmpo log`
+
 View your time tracking history.
 
 ```bash
@@ -117,6 +122,7 @@ tmpo log --limit 50  # Show more entries
 ```
 
 #### `tmpo stats`
+
 Display statistics about your tracked time.
 
 ```bash
@@ -128,6 +134,7 @@ tmpo stats --week   # This week's stats
 ### Project Configuration
 
 #### `tmpo init`
+
 Create a `.tmporc` configuration file for the current project.
 
 ```bash
@@ -155,6 +162,7 @@ description: ""
 ### Advanced Features
 
 #### `tmpo manual`
+
 Create manual time entries for past work using an interactive prompt.
 
 ```bash
@@ -167,6 +175,7 @@ tmpo manual
 ```
 
 #### `tmpo export`
+
 Export your time tracking data to CSV or JSON.
 
 ```bash
@@ -181,13 +190,17 @@ tmpo export --output timesheet.csv       # Specify output file
 ## Features
 
 ### Automatic Project Detection
+
 tmpo intelligently detects your project context:
+
 - **`.tmporc` files**: Place a config file in your project root for explicit naming
 - **Git repositories**: Automatically uses the repository name
 - **Directory fallback**: Uses the current directory name
 
 ### Hourly Rate Tracking
+
 Track billable hours with automatic earnings calculations:
+
 ```bash
 tmpo init --rate 150
 tmpo start "Client consultation"
@@ -195,22 +208,26 @@ tmpo start "Client consultation"
 ```
 
 ### Flexible Reporting
+
 - **Daily/Weekly stats**: `tmpo stats --today` or `tmpo stats --week`
 - **Project summaries**: See time breakdown by project
 - **Export options**: CSV and JSON formats for integration with other tools
 
 ### Local & Private
+
 All data is stored locally in `~/.tmpo/tmpo.db` using SQLite. Your time tracking data never leaves your machine.
 
 ## Configuration
 
 ### Global Storage Location
+
 ```
 ~/.tmpo/
   └── tmpo.db          # SQLite database with all time entries
 ```
 
 ### Project Configuration (`.tmporc`)
+
 Place a `.tmporc` file in your project root for custom settings:
 
 ```yaml
@@ -270,6 +287,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 Built with:
+
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
 - [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) - Pure Go SQLite driver
 - [promptui](https://github.com/manifoldco/promptui) - Interactive prompts
