@@ -1,29 +1,18 @@
 # tmpo CLI
 
-Set the `tmpo` — A minimal CLI time tracker for developers.
+> Set the `tmpo` — A minimal CLI time tracker for developers.
 
-<!-- ![screenshot of tmpo start and tmpo stats]() -->
-<p align="center">
-  <img width="600" alt="tmpo Logo" src="./Minimal CLI Time Tracker.svg" />
-</p>
+![screenshot of tmpo start and tmpo stats](https://github.com/user-attachments/assets/6480b22a-e148-4142-9cb8-0b4ef1007430)
 
 `tmpo` allows you to track time effortlessly with automatic project detection and simple commands that live in your terminal.
 
 ## Table of Contents
 
-*   [Getting Started](#getting-started)
-    *   [Installation](#installation)
-*   [Usage Examples](#usage-examples)
-*   [Contributing](#contributing)
-*   [License](#license)
-
-<p align="center">
-  <a href="#installation">Installation</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#features">Features</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#license">License</a>
-</p>
+1.  [Installation](#installation)
+2.  [Usage](#usage)
+3.  [Features](#features)
+4.  [Configuration](#configuration)
+5.  [License](#license)
 
 ---
 
