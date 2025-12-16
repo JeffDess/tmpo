@@ -21,11 +21,22 @@ Place a `.tmporc` file in your project root to customize tracking settings for t
 
 ### Creating a Configuration File
 
-Use `tmpo init` to create a `.tmporc` file interactively:
+Use `tmpo init` to create a `.tmporc` file using an interactive form:
 
 ```bash
 cd ~/projects/my-project
-tmpo init --name "My Project" --rate 150
+tmpo init
+# You'll be prompted for:
+# - Project name (defaults to auto-detected name)
+# - Hourly rate (optional, press Enter to skip)
+# - Description (optional, press Enter to skip)
+```
+
+For quick setup without prompts, use the `--accept-defaults` flag:
+
+```bash
+tmpo init --accept-defaults
+# Creates .tmporc with auto-detected project name and default values
 ```
 
 This creates a `.tmporc` file in the current directory.
@@ -130,28 +141,34 @@ tmpo start
 
 ### Separate Projects with Different Rates
 
-Create a `.tmporc` in each project directory:
+Create a `.tmporc` in each project directory using `tmpo init`:
 
 ```bash
 # Client A - $150/hour
 cd ~/projects/client-a
-cat > .tmporc << EOF
-project_name: Client A - Web Development
-hourly_rate: 150.00
-EOF
+tmpo init
+# Project name: Client A - Web Development
+# Hourly rate: 150
+# Description: [press Enter to skip]
 
 # Client B - $175/hour
 cd ~/projects/client-b
-cat > .tmporc << EOF
-project_name: Client B - Game Development
-hourly_rate: 175.00
-EOF
+tmpo init
+# Project name: Client B - Game Development
+# Hourly rate: 175
+# Description: [press Enter to skip]
 
 # Personal project - no billing
 cd ~/projects/my-app
-cat > .tmporc << EOF
-project_name: My App
-hourly_rate: 0
+tmpo init --accept-defaults  # Quick setup with defaults
+```
+
+Alternatively, you can manually create `.tmporc` files:
+
+```bash
+cat > ~/projects/client-a/.tmporc << EOF
+project_name: Client A - Web Development
+hourly_rate: 150.00
 EOF
 ```
 

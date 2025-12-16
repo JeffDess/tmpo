@@ -4,69 +4,159 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/DylanDevelops/tmpo/internal/config"
 	"github.com/DylanDevelops/tmpo/internal/project"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
 var (
-	hourlyRate float64
-	projectName string
+	acceptDefaults bool
 )
 
-// initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a .tmporc config file",
-	Long:  `Create a .tmporc configuration file in the current directory.`,
+	Long:  `Create a .tmporc configuration file in the current directory using an interactive form.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(".tmporc"); err == nil {
 			fmt.Println("Error: .tmporc already exists in this directory")
-
 			os.Exit(1)
 		}
 
-		name := projectName
-		if name == "" {
-			cwd, err := os.Getwd()
+		// Detect default project name
+		defaultName := detectDefaultProjectName()
+
+		var name string
+		var hourlyRate float64
+		var description string
+
+		if acceptDefaults {
+			// Use all defaults without prompting
+			name = defaultName
+			hourlyRate = 0
+			description = ""
+		} else {
+			// Interactive form
+			fmt.Println("\n[tmpo] Initialize Project Configuration")
+
+			// Project Name prompt
+			namePrompt := promptui.Prompt{
+				Label:     fmt.Sprintf("Project name (%s)", defaultName),
+				AllowEdit: true,
+			}
+
+			nameInput, err := namePrompt.Run()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-
 				os.Exit(1)
 			}
 
-			if project.IsInGitRepo() {
-				gitName, _ := project.GetGitRoot()
-				if gitName != "" {
-					name = filepath.Base(gitName)
+			name = strings.TrimSpace(nameInput)
+			if name == "" {
+				name = defaultName
+			}
+
+			// Hourly Rate prompt
+			ratePrompt := promptui.Prompt{
+				Label:    "Hourly rate (press Enter to skip)",
+				Validate: validateHourlyRate,
+			}
+
+			rateInput, err := ratePrompt.Run()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			rateInput = strings.TrimSpace(rateInput)
+			if rateInput != "" {
+				hourlyRate, err = strconv.ParseFloat(rateInput, 64)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error parsing hourly rate: %v\n", err)
+					os.Exit(1)
 				}
 			}
 
-			if name == "" {
-				name = filepath.Base(cwd)
+			// Description prompt
+			descPrompt := promptui.Prompt{
+				Label: "Description (press Enter to skip)",
 			}
+
+			descInput, err := descPrompt.Run()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			description = strings.TrimSpace(descInput)
 		}
 
-		err := config.CreateWithTemplate(name, hourlyRate)
+		// Create the .tmporc file
+		err := config.CreateWithTemplate(name, hourlyRate, description)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-
 			os.Exit(1)
 		}
 
-		fmt.Printf("[tmpo] Created .tmporc for project '%s'\n", name)
+		fmt.Printf("\n[tmpo] Created .tmporc for project '%s'\n", name)
 		if hourlyRate > 0 {
 			fmt.Printf("    Hourly Rate: $%.2f\n", hourlyRate)
+		}
+		if description != "" {
+			fmt.Printf("    Description: %s\n", description)
 		}
 
 		fmt.Println("\nYou can edit .tmporc to customize your project settings.")
 	},
 }
 
+// detectDefaultProjectName returns the auto-detected project name
+func detectDefaultProjectName() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "my-project"
+	}
+
+	name := ""
+	if project.IsInGitRepo() {
+		gitName, _ := project.GetGitRoot()
+		if gitName != "" {
+			name = filepath.Base(gitName)
+		}
+	}
+
+	if name == "" {
+		name = filepath.Base(cwd)
+	}
+
+	return name
+}
+
+// validateHourlyRate validates that the input is empty or a valid positive number
+func validateHourlyRate(input string) error {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil // Allow empty for optional field
+	}
+
+	rate, err := strconv.ParseFloat(input, 64)
+	if err != nil {
+		return fmt.Errorf("must be a valid number")
+	}
+
+	if rate < 0 {
+		return fmt.Errorf("hourly rate cannot be negative")
+	}
+
+	return nil
+}
+
 func init() {
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().Float64VarP(&hourlyRate, "rate", "r", 0, "Hourly rate for this project")
-	initCmd.Flags().StringVarP(&projectName, "name", "n", "", "Project name (defaults to directory/repo name)")
+	initCmd.Flags().BoolVarP(&acceptDefaults, "accept-defaults", "a", false, "Accept all defaults and skip interactive prompts")
 }

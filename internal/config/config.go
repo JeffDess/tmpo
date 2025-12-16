@@ -28,6 +28,7 @@ type Config struct {
 // Format placeholders:
 //   %s - project name (string)
 //   %.2f - hourly rate (float64, 2 decimal places)
+//   %s - description (string)
 //
 // ! IMPORTANT: When adding new fields to the Config struct above, update this template. !
 const configTemplate = `# tmpo project configuration
@@ -40,7 +41,7 @@ project_name: %s
 hourly_rate: %.2f
 
 # [OPTIONAL] Description for this project
-description: ""
+description: "%s"
 `
 
 // Load reads a YAML configuration file from the provided path and unmarshals it into a Config.
@@ -98,13 +99,13 @@ func Create(projectName string, hourlyRate float64) error {
 // CreateWithTemplate creates a new .tmporc file with a user-friendly format that includes
 // all fields (even if empty) and helpful comments. This provides a better user experience
 // by showing all available configuration options.
-func CreateWithTemplate(projectName string, hourlyRate float64) error {
+func CreateWithTemplate(projectName string, hourlyRate float64, description string) error {
 	tmporc := filepath.Join(".", ".tmporc")
 	if _, err := os.Stat(tmporc); err == nil {
 		return fmt.Errorf(".tmporc already exists")
 	}
 
-	content := fmt.Sprintf(configTemplate, projectName, hourlyRate)
+	content := fmt.Sprintf(configTemplate, projectName, hourlyRate, description)
 
 	if err := os.WriteFile(tmporc, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
