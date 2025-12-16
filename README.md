@@ -41,16 +41,10 @@ go build -o tmpo .
 ## Quick Start
 
 ```bash
-# Initialize an optional configuration file
-tmpo init
-
 # Start tracking (auto-detects project)
 tmpo start
 
-# Add a description
-tmpo start "Fixing auth bug"
-
-# Check current status
+# Check status
 tmpo status
 
 # Stop tracking
@@ -64,10 +58,14 @@ For detailed usage and all commands, see the [Usage Guide](docs/usage.md).
 
 ## Configuration
 
-Optionally, but highly recommended, create a `.tmporc` file in your project to customize the project name and hourly rate:
+Optionally create a `.tmporc` file in your project to customize settings:
 
 ```bash
-tmpo init --name "My Project" --rate 25.50
+# Interactive form (prompts for name, rate, description)
+tmpo init
+
+# Or skip prompts and use defaults
+tmpo init --accept-defaults
 ```
 
 See the [Configuration Guide](docs/configuration.md) for details.

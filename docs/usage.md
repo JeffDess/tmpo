@@ -77,22 +77,36 @@ tmpo stats --week   # This week's stats
 
 ### `tmpo init`
 
-Create a `.tmporc` configuration file for the current project.
+Create a `.tmporc` configuration file for the current project using an interactive form. You'll be prompted to enter:
 
-**Options:**
+- **Project name** - Defaults to auto-detected name from Git repo or directory
+- **Hourly rate** - Optional billing rate (press Enter to skip)
+- **Description** - Optional project description (press Enter to skip)
 
-- `--name "Project Name"` - Specify custom project name
-- `--rate 150` - Set hourly rate for billing calculations
-
-**Examples:**
+**Interactive Mode (default):**
 
 ```bash
-tmpo init                                   # Auto-detect project name
-tmpo init --name "My Project"               # Specify name
-tmpo init --name "Client Work" --rate 150   # Set hourly rate
+tmpo init
+# [tmpo] Initialize Project Configuration
+# Project name (my-project): [Enter custom name or press Enter for default]
+# Hourly rate (press Enter to skip): 150
+# Description (press Enter to skip): Client website redesign
 ```
 
-See [Configuration Guide](configuration.md) for details on the `.tmporc` file format.
+**Quick Mode:**
+
+Use the `--accept-defaults` flag to skip all prompts and use auto-detected defaults:
+
+```bash
+tmpo init --accept-defaults   # Creates .tmporc with defaults, no prompts
+```
+
+This creates a `.tmporc` file with:
+- Project name from Git repo or directory name
+- Hourly rate of 0 (disabled)
+- Empty description
+
+See [Configuration Guide](configuration.md) for details on the `.tmporc` file format and manual editing.
 
 ## Advanced Features
 
