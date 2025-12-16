@@ -26,7 +26,7 @@ func GetVersionOutput() string {
 }
 
 // GetFormattedDate parses inputDate as an RFC3339 timestamp and returns the date
-// formatted as "YYYY-MM-DD" wrapped in parentheses (for example "(2006-01-02)").
+// formatted as "YYYY-MM-DD" wrapped in parentheses (for example "(01-02-2006)").
 // If inputDate is empty or cannot be parsed as RFC3339, it returns an empty string.
 func GetFormattedDate(inputDate string) string {
 	if inputDate == "" {
@@ -38,7 +38,7 @@ func GetFormattedDate(inputDate string) string {
 		return ""
 	}
 
-	return fmt.Sprintf("(%s)", date.Format("2006-01-02"))
+	return fmt.Sprintf("(%s)", date.Format("01-02-2006"))
 }
 
 func GetChangelogUrl(version string) string {
