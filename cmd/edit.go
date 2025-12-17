@@ -211,8 +211,12 @@ var editCmd = &cobra.Command{
 
 		// Edit description
 		currentDescription := selectedEntry.Description
+		descriptionLabel := "Description"
+		if currentDescription != "" {
+			descriptionLabel = fmt.Sprintf("Description: (%s)", currentDescription)
+		}
 		descriptionPrompt := promptui.Prompt{
-			Label:     fmt.Sprintf("Description: (%s)", currentDescription),
+			Label:     descriptionLabel,
 			AllowEdit: true,
 		}
 
