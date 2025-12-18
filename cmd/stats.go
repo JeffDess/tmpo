@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/DylanDevelops/tmpo/internal/storage"
@@ -121,7 +122,16 @@ func ShowPeriodStats(entries []*storage.TimeEntry, periodName string) {
 
 	fmt.Println()
 	ui.PrintInfo(4, ui.Bold("By Project"), "")
-	for project, duration := range projectStats {
+
+	// Sort projects alphabetically for consistent display order
+	var projects []string
+	for project := range projectStats {
+		projects = append(projects, project)
+	}
+	sort.Strings(projects)
+
+	for _, project := range projects {
+		duration := projectStats[project]
 		percentage := (duration.Seconds() / totalDuration.Seconds()) * 100
 		fmt.Printf("        %s  %s  (%.1f%%)\n", ui.Bold(fmt.Sprintf("%-20s", project)), ui.FormatDuration(duration), percentage)
 
@@ -174,12 +184,12 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 		}
 	}
 
-	projects, _ := db.GetAllProjects()
+	allProjects, _ := db.GetAllProjects()
 
 	ui.PrintSuccess(ui.EmojiStats, ui.Bold("All-Time Statistics"))
 	ui.PrintInfo(4, ui.Bold("Total Time"), fmt.Sprintf("%s (%.2f hours)", ui.FormatDuration(totalDuration), totalDuration.Hours()))
 	ui.PrintInfo(4, ui.Bold("Total Entries"), fmt.Sprintf("%d", len(entries)))
-	ui.PrintInfo(4, ui.Bold("Projects Tracked"), fmt.Sprintf("%d", len(projects)))
+	ui.PrintInfo(4, ui.Bold("Projects Tracked"), fmt.Sprintf("%d", len(allProjects)))
 
 	if hasAnyEarnings {
 		ui.PrintInfo(4, ui.Bold("Earnings"), fmt.Sprintf("$%.2f", totalEarnings))
@@ -187,7 +197,16 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 
 	fmt.Println()
 	ui.PrintInfo(4, ui.Bold("By Project"), "")
-	for project, duration := range projectStats {
+
+	// Sort projects alphabetically for consistent display order
+	var projects []string
+	for project := range projectStats {
+		projects = append(projects, project)
+	}
+	sort.Strings(projects)
+
+	for _, project := range projects {
+		duration := projectStats[project]
 		percentage := (duration.Seconds() / totalDuration.Seconds()) * 100
 		fmt.Printf("        %s  %s  (%.1f%%)\n", ui.Bold(fmt.Sprintf("%-20s", project)), ui.FormatDuration(duration), percentage)
 
