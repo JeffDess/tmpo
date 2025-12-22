@@ -17,101 +17,101 @@ var (
 	logWeek bool
 )
 
-var logCmd = &cobra.Command{
-	Use:   "log",
-	Short: "View time tracking history",
-	Long:  `Display past time tracking entries with optional filtering.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		ui.NewlineAbove()
+func LogCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "log",
+		Short: "View time tracking history",
+		Long:  `Display past time tracking entries with optional filtering.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			ui.NewlineAbove()
 
-		db, err := storage.Initialize()
+			db, err := storage.Initialize()
 
-		if err != nil {
-			ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-			os.Exit(1)
-		}
-
-		defer db.Close()
-
-		var entries []*storage.TimeEntry
-
-		if logToday {
-			start := time.Now().Truncate(24 * time.Hour)
-			end := start.Add(24 * time.Hour)
-			entries, err = db.GetEntriesByDateRange(start, end)
-		} else if logWeek {
-			now := time.Now()
-			weekday := int(now.Weekday())
-			if weekday == 0 {
-				weekday = 7 // sunday
+			if err != nil {
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+				os.Exit(1)
 			}
 
-			start := now.AddDate(0, 0, -weekday+1).Truncate(24 * time.Hour)
-			end := start.AddDate(0, 0, 7)
-			entries, err = db.GetEntriesByDateRange(start, end)
-		} else if logProject != "" {
-			entries, err = db.GetEntriesByProject(logProject)
-		} else {
-			entries, err = db.GetEntries(logLimit)
-		}
+			defer db.Close()
 
-		if err != nil {
-			ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-			os.Exit(1)
-		}
+			var entries []*storage.TimeEntry
 
-		if len(entries) == 0 {
-			ui.PrintWarning(ui.EmojiWarning, "No time entries found.")
-			ui.NewlineBelow()
-			return
-		}
-
-		ui.PrintSuccess(ui.EmojiLog, fmt.Sprintf("Time Entries (%d total)", len(entries)))
-		fmt.Println()
-
-		var totalDuration time.Duration
-		currentDate := ""
-
-		for _, entry := range entries {
-			entryDate := entry.StartTime.Format("Mon, Jan 2, 2006")
-			if entryDate != currentDate {
-				if currentDate != "" {
-					fmt.Println()
+			if logToday {
+				start := time.Now().Truncate(24 * time.Hour)
+				end := start.Add(24 * time.Hour)
+				entries, err = db.GetEntriesByDateRange(start, end)
+			} else if logWeek {
+				now := time.Now()
+				weekday := int(now.Weekday())
+				if weekday == 0 {
+					weekday = 7 // sunday
 				}
 
-				fmt.Println(ui.Bold(ui.Muted(fmt.Sprintf("─── %s ───", entryDate))))
-				currentDate = entryDate
-			}
-
-			duration := entry.Duration()
-			totalDuration += duration
-
-			timeRange := entry.StartTime.Format("03:04 PM") + " - "
-			if entry.EndTime != nil {
-				timeRange += entry.EndTime.Format("03:04 PM") + "  "
+				start := now.AddDate(0, 0, -weekday+1).Truncate(24 * time.Hour)
+				end := start.AddDate(0, 0, 7)
+				entries, err = db.GetEntriesByDateRange(start, end)
+			} else if logProject != "" {
+				entries, err = db.GetEntriesByProject(logProject)
 			} else {
-				timeRange += ui.Warning("(running)") + " "
+				entries, err = db.GetEntries(logLimit)
 			}
 
-			fmt.Printf("  %s  %s  %s\n", timeRange, ui.Bold(fmt.Sprintf("%-20s", entry.ProjectName)), ui.FormatDuration(duration))
-			if entry.Description != "" {
-				fmt.Printf("    %s %s\n", ui.Muted("└─"), entry.Description)
+			if err != nil {
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+				os.Exit(1)
 			}
-		}
 
-		fmt.Println()
-		ui.PrintSeparator()
-		fmt.Printf("%s %s\n", ui.BoldInfo("Total Time:"), ui.Bold(ui.FormatDuration(totalDuration)))
+			if len(entries) == 0 {
+				ui.PrintWarning(ui.EmojiWarning, "No time entries found.")
+				ui.NewlineBelow()
+				return
+			}
 
-		ui.NewlineBelow()
-	},
-}
+			ui.PrintSuccess(ui.EmojiLog, fmt.Sprintf("Time Entries (%d total)", len(entries)))
+			fmt.Println()
 
-func init() {
-	rootCmd.AddCommand(logCmd)
+			var totalDuration time.Duration
+			currentDate := ""
 
-	logCmd.Flags().IntVarP(&logLimit, "limit", "l", 10, "Number of entries to show")
-	logCmd.Flags().StringVarP(&logProject, "project", "p", "", "Filter by project name")
-	logCmd.Flags().BoolVarP(&logToday, "today", "t", false, "Show today's entries")
-	logCmd.Flags().BoolVarP(&logWeek, "week", "w", false, "Show this week's entries")
+			for _, entry := range entries {
+				entryDate := entry.StartTime.Format("Mon, Jan 2, 2006")
+				if entryDate != currentDate {
+					if currentDate != "" {
+						fmt.Println()
+					}
+
+					fmt.Println(ui.Bold(ui.Muted(fmt.Sprintf("─── %s ───", entryDate))))
+					currentDate = entryDate
+				}
+
+				duration := entry.Duration()
+				totalDuration += duration
+
+				timeRange := entry.StartTime.Format("03:04 PM") + " - "
+				if entry.EndTime != nil {
+					timeRange += entry.EndTime.Format("03:04 PM") + "  "
+				} else {
+					timeRange += ui.Warning("(running)") + " "
+				}
+
+				fmt.Printf("  %s  %s  %s\n", timeRange, ui.Bold(fmt.Sprintf("%-20s", entry.ProjectName)), ui.FormatDuration(duration))
+				if entry.Description != "" {
+					fmt.Printf("    %s %s\n", ui.Muted("└─"), entry.Description)
+				}
+			}
+
+			fmt.Println()
+			ui.PrintSeparator()
+			fmt.Printf("%s %s\n", ui.BoldInfo("Total Time:"), ui.Bold(ui.FormatDuration(totalDuration)))
+
+			ui.NewlineBelow()
+		},
+	}
+
+	cmd.Flags().IntVarP(&logLimit, "limit", "l", 10, "Number of entries to show")
+	cmd.Flags().StringVarP(&logProject, "project", "p", "", "Filter by project name")
+	cmd.Flags().BoolVarP(&logToday, "today", "t", false, "Show today's entries")
+	cmd.Flags().BoolVarP(&logWeek, "week", "w", false, "Show this week's entries")
+
+	return cmd
 }

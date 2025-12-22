@@ -11,14 +11,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show version information",
-	Long:  "Display the current version information including date and release URL.",
-	Hidden: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		DisplayVersionWithUpdateCheck()
-	},
+func VersionCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Show version information",
+		Long:  "Display the current version information including date and release URL.",
+		Run: func(cmd *cobra.Command, args []string) {
+			DisplayVersionWithUpdateCheck()
+		},
+	}
+
+	return cmd
 }
 
 // DisplayVersionWithUpdateCheck displays the version information and checks for updates.
@@ -77,8 +80,4 @@ func checkForUpdates() {
 		fmt.Printf("%s %s\n", ui.Info("New Update Available:"), ui.Bold(strings.TrimPrefix(updateInfo.LatestVersion, "v")))
 		fmt.Printf("%s\n\n", ui.Muted(updateInfo.UpdateURL))
 	}
-}
-
-func init() {
-	rootCmd.AddCommand(versionCmd)
 }
