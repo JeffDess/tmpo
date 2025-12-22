@@ -7,13 +7,8 @@ import (
 	"github.com/DylanDevelops/tmpo/cmd/history"
 	"github.com/DylanDevelops/tmpo/cmd/setup"
 	"github.com/DylanDevelops/tmpo/cmd/tracking"
+	"github.com/DylanDevelops/tmpo/cmd/utilities"
 	"github.com/spf13/cobra"
-)
-
-var (
-	Version = "dev"
-	Commit  = "none"
-	Date    = "unknown"
 )
 
 func RootCmd() *cobra.Command {
@@ -29,7 +24,7 @@ Track time effortlessly with automatic project detection and simple commands.`,
 			versionFlag, _ := cmd.Flags().GetBool("version")
 
 			if versionFlag {
-				DisplayVersionWithUpdateCheck()
+				utilities.DisplayVersionWithUpdateCheck()
 				return
 			}
 
@@ -39,6 +34,9 @@ Track time effortlessly with automatic project detection and simple commands.`,
 	}
 
 	cmd.Flags().BoolP("version", "v", false, "version for tmpo")
+
+	// Utilities
+	cmd.AddCommand(utilities.VersionCmd())
 
 	// Tracking
 	cmd.AddCommand(tracking.StartCmd())
