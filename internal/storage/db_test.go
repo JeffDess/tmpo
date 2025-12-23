@@ -477,6 +477,53 @@ func TestTimeEntryIsRunning(t *testing.T) {
 	}
 }
 
+func TestTimeEntryRoundedHours(t *testing.T) {
+	tests := []struct {
+		name     string
+		entry    *TimeEntry
+		expected float64
+	}{
+		{
+			name: "1h 49m 46s rounds to 1.83 hours",
+			entry: &TimeEntry{
+				StartTime: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+				EndTime:   timePtr(time.Date(2024, 1, 1, 11, 49, 46, 0, time.UTC)),
+			},
+			expected: 1.83,
+		},
+		{
+			name: "2h 30m 0s rounds to 2.50 hours",
+			entry: &TimeEntry{
+				StartTime: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+				EndTime:   timePtr(time.Date(2024, 1, 1, 12, 30, 0, 0, time.UTC)),
+			},
+			expected: 2.50,
+		},
+		{
+			name: "0h 5m 30s rounds to 0.09 hours",
+			entry: &TimeEntry{
+				StartTime: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+				EndTime:   timePtr(time.Date(2024, 1, 1, 10, 5, 30, 0, time.UTC)),
+			},
+			expected: 0.09,
+		},
+		{
+			name: "3h 14m 56s rounds to 3.25 hours",
+			entry: &TimeEntry{
+				StartTime: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+				EndTime:   timePtr(time.Date(2024, 1, 1, 13, 14, 56, 0, time.UTC)),
+			},
+			expected: 3.25,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.entry.RoundedHours())
+		})
+	}
+}
+
 // Helper functions
 func floatPtr(f float64) *float64 {
 	return &f

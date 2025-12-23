@@ -167,7 +167,7 @@ func ManualCmd() *cobra.Command {
 			}
 
 			if entry.HourlyRate != nil {
-				earnings := duration.Hours() * *entry.HourlyRate
+				earnings := entry.RoundedHours() * *entry.HourlyRate
 				fmt.Printf("    %s %s\n", ui.BoldInfo("Hourly Rate:"), fmt.Sprintf("$%.2f", *entry.HourlyRate))
 				fmt.Printf("    %s %s\n", ui.BoldInfo("Earnings:"), fmt.Sprintf("$%.2f", earnings))
 			}
