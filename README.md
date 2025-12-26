@@ -58,6 +58,22 @@ For detailed usage and all commands, see the [Usage Guide](docs/usage.md).
 
 ## Configuration
 
+### Global Settings
+
+Set your preferences for currency, date/time formats, and timezone:
+
+```bash
+tmpo config
+```
+
+This opens an interactive wizard to configure:
+- Currency (USD, EUR, GBP, JPY, and 30+ more)
+- Date format (MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD)
+- Time format (24-hour or 12-hour)
+- Timezone (IANA format like America/New_York)
+
+### Per-Project Settings
+
 Optionally create a `.tmporc` file in your project to customize settings:
 
 ```bash

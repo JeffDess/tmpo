@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/DylanDevelops/tmpo/cmd/config"
 	"github.com/DylanDevelops/tmpo/cmd/entries"
 	"github.com/DylanDevelops/tmpo/cmd/history"
 	"github.com/DylanDevelops/tmpo/cmd/setup"
@@ -57,7 +58,10 @@ Track time effortlessly with automatic project detection and simple commands.`,
 
 	// Setup
 	cmd.AddCommand(setup.InitCmd())
-	
+
+	// Configuration
+	cmd.AddCommand(config.ConfigCmd())
+
 	return cmd
 }
 

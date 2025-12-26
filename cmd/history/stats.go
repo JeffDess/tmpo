@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/DylanDevelops/tmpo/internal/config"
+	"github.com/DylanDevelops/tmpo/internal/settings"
 	"github.com/DylanDevelops/tmpo/internal/currency"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/DylanDevelops/tmpo/internal/ui"
@@ -231,13 +231,12 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	ui.NewlineBelow()
 }
 
-// getCurrencyCode attempts to load the currency code from the current project's
-// .tmporc configuration file. If no config is found or currency is not set,
-// it returns "USD" as the default.
+// getCurrencyCode loads the currency code from the global configuration.
+// If the global config cannot be loaded, it returns the default currency.
 func getCurrencyCode() string {
-	cfg, _, err := config.FindAndLoad()
+	globalCfg, err := settings.LoadGlobalConfig()
 	if err != nil {
-		return "USD"
+		return currency.DefaultCurrency
 	}
-	return cfg.GetCurrencyOrDefault()
+	return globalCfg.Currency
 }

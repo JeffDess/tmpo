@@ -52,11 +52,21 @@ goreleaser build --snapshot --clean
 - Database location: `$HOME/.tmpo/tmpo.db`
 - Schema: time_entries table with id, project_name, start_time, end_time, description, hourly_rate
 
-**Configuration** (`internal/config/`):
-- YAML-based config using `.tmporc` files
-- Config fields: project_name, hourly_rate, description
-- FindAndLoad() searches upward through parent directories for `.tmporc`
-- Supports per-project configuration by placing `.tmporc` in project root
+**Configuration** (`internal/settings/`):
+- **Per-Project Configuration**: YAML-based config using `.tmporc` files
+  - Config fields: project_name, hourly_rate, description
+  - FindAndLoad() searches upward through parent directories for `.tmporc`
+  - Supports per-project configuration by placing `.tmporc` in project root
+- **Global Configuration** (`~/.tmpo/config.yaml`):
+  - Managed via `tmpo config` command
+  - Settings: currency, date_format, time_format, timezone
+  - Currency is stored globally for consistent billing display
+  - Date format is selectable (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD)
+  - Time format is selectable (24-hour, 12-hour (AM/PM))
+  - Timezone uses IANA format with validation (e.g., America/New_York, UTC)
+  - Located at `$HOME/.tmpo/config.yaml`
+  - If missing, defaults are used (USD, empty formats, local timezone)
+  - LoadGlobalConfig() returns defaults if file doesn't exist (no error)
 
 **Project Detection** (`internal/project/`):
 - Three-tier detection strategy:
@@ -96,7 +106,7 @@ HourlyRate is optional (*float64). Stored as sql.NullFloat64 in database queries
 
 **Config Template Pattern:**
 The `.tmporc` file generation uses a template-based approach to ensure all fields are visible to users:
-- Template is defined as `configTemplate` constant in `internal/config/config.go`
+- Template is defined as `configTemplate` constant in `internal/settings/config.go`
 - Located directly below the `Config` struct for easy maintenance
 - When adding new fields to `Config`, update both the struct AND the template (marked with IMPORTANT comments)
 

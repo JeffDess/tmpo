@@ -1,4 +1,4 @@
-package config
+package settings
 
 import (
 	"os"
@@ -179,7 +179,7 @@ func TestCreateWithTemplate(t *testing.T) {
 		err = os.Chdir(tmpDir)
 		assert.NoError(t, err)
 
-		err = CreateWithTemplate("templated-project", 99.99, "Test description", "EUR")
+		err = CreateWithTemplate("templated-project", 99.99, "Test description")
 		assert.NoError(t, err)
 
 		// Verify file was created
@@ -192,7 +192,6 @@ func TestCreateWithTemplate(t *testing.T) {
 		assert.Contains(t, string(content), "project_name: templated-project")
 		assert.Contains(t, string(content), "hourly_rate: 99.99")
 		assert.Contains(t, string(content), "description: \"Test description\"")
-		assert.Contains(t, string(content), "currency: EUR")
 		assert.Contains(t, string(content), "# [OPTIONAL]")
 
 		// Verify it can be loaded
@@ -201,7 +200,6 @@ func TestCreateWithTemplate(t *testing.T) {
 		assert.Equal(t, "templated-project", cfg.ProjectName)
 		assert.Equal(t, 99.99, cfg.HourlyRate)
 		assert.Equal(t, "Test description", cfg.Description)
-		assert.Equal(t, "EUR", cfg.Currency)
 	})
 
 	t.Run("returns error if file exists", func(t *testing.T) {
@@ -214,11 +212,11 @@ func TestCreateWithTemplate(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Create initial file
-		err = CreateWithTemplate("first", 100.0, "desc", "USD")
+		err = CreateWithTemplate("first", 100.0, "desc")
 		assert.NoError(t, err)
 
 		// Try to create again
-		err = CreateWithTemplate("second", 200.0, "desc2", "EUR")
+		err = CreateWithTemplate("second", 200.0, "desc2")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "already exists")
 	})

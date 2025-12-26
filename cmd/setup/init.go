@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DylanDevelops/tmpo/internal/config"
-	"github.com/DylanDevelops/tmpo/internal/currency"
 	"github.com/DylanDevelops/tmpo/internal/project"
+	"github.com/DylanDevelops/tmpo/internal/settings"
 	"github.com/DylanDevelops/tmpo/internal/ui"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -38,14 +37,12 @@ func InitCmd() *cobra.Command {
 			var name string
 			var hourlyRate float64
 			var description string
-			var currencyCode string
 
 			if acceptDefaults {
 				// Use all defaults without prompting
 				name = defaultName
 				hourlyRate = 0
 				description = ""
-				currencyCode = "USD"
 			} else {
 				// Interactive form
 				ui.PrintSuccess(ui.EmojiInit, "Initialize Project Configuration")
@@ -101,27 +98,10 @@ func InitCmd() *cobra.Command {
 				}
 
 				description = strings.TrimSpace(descInput)
-
-				// Currency prompt
-				currencyPrompt := promptui.Prompt{
-					Label:    "Currency code (press Enter for USD)",
-					Validate: validateCurrency,
-				}
-
-				currencyInput, err := currencyPrompt.Run()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-					os.Exit(1)
-				}
-
-				currencyCode = strings.ToUpper(strings.TrimSpace(currencyInput))
-				if currencyCode == "" {
-					currencyCode = "USD"
-				}
 			}
 
 			// Create the .tmporc file
-			err := config.CreateWithTemplate(name, hourlyRate, description, currencyCode)
+			err := settings.CreateWithTemplate(name, hourlyRate, description)
 			if err != nil {
 				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
 				os.Exit(1)
@@ -130,17 +110,15 @@ func InitCmd() *cobra.Command {
 			fmt.Println()
 			ui.PrintSuccess(ui.EmojiSuccess, fmt.Sprintf("Created .tmporc for project %s", ui.Bold(name)))
 			if hourlyRate > 0 {
-				ui.PrintInfo(4, ui.Bold("Hourly Rate"), currency.FormatCurrency(hourlyRate, currencyCode))
+				ui.PrintInfo(4, ui.Bold("Hourly Rate"), fmt.Sprintf("%.2f", hourlyRate))
 			}
 			if description != "" {
 				ui.PrintInfo(4, ui.Bold("Description"), description)
 			}
-			if currencyCode != "" && currencyCode != "USD" {
-				ui.PrintInfo(4, ui.Bold("Currency"), currencyCode)
-			}
 
 			fmt.Println()
 			ui.PrintMuted(0, "You can edit .tmporc to customize your project settings.")
+			ui.PrintMuted(0, "Use 'tmpo config' to set global preferences like currency and time formats.")
 
 			ui.NewlineBelow()
 		},

@@ -4,14 +4,84 @@ Learn how to configure tmpo for your projects and workflow.
 
 ## Storage Location
 
-All time tracking data is stored locally on your machine:
+All time tracking data and configuration is stored locally on your machine:
 
 ```
 ~/.tmpo/
-  └── tmpo.db          # SQLite database
+  ├── tmpo.db          # SQLite database with time entries
+  └── config.yaml      # Global configuration (optional)
 ```
 
-Your data never leaves your machine. The database file can be backed up, copied, or version controlled if desired.
+Your data never leaves your machine. Both files can be backed up, copied, or version controlled if desired.
+
+## Global Configuration
+
+### The `tmpo config` Command
+
+Use `tmpo config` to set user-wide preferences that apply across all projects:
+
+```bash
+tmpo config
+```
+
+This launches an interactive configuration wizard where you can set:
+
+- **Currency** - Your preferred currency for displaying billing rates and earnings
+- **Date Format** - Choose between MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD
+- **Time Format** - Choose between 24-hour (15:30) or 12-hour (3:30 PM)
+- **Timezone** - IANA timezone for your location (e.g., America/New_York, Europe/London)
+
+### Global Settings
+
+Global preferences are stored in `~/.tmpo/config.yaml`:
+
+```yaml
+currency: USD
+date_format: MM/DD/YYYY
+time_format: 12-hour (AM/PM)
+timezone: America/New_York
+```
+
+These settings affect how tmpo displays times and currencies throughout the application:
+
+#### Currency
+
+Your currency choice determines the symbol displayed for all billing information across all projects:
+
+**Supported Currencies:**
+
+tmpo supports 30+ currencies including:
+
+- **Americas:** USD ($), CAD (CA$), BRL (R$), MXN (MX$)
+- **Europe:** EUR (€), GBP (£), CHF (Fr), SEK (kr), NOK (kr)
+- **Asia:** JPY (¥), CNY (¥), INR (₹), KRW (₩), SGD (S$)
+- **Oceania:** AUD (A$), NZD (NZ$)
+
+See the [full currency code list](https://en.wikipedia.org/wiki/ISO_4217#Active_codes).
+
+#### Date & Time Formats
+
+Choose how dates and times are displayed in logs, stats, and entry details:
+
+**Date Formats:**
+- `MM/DD/YYYY` - US format (01/15/2024)
+- `DD/MM/YYYY` - European format (15/01/2024)
+- `YYYY-MM-DD` - ISO format (2024-01-15)
+
+**Time Formats:**
+- `24-hour` - Military time (14:30, 23:45)
+- `12-hour (AM/PM)` - Standard time (2:30 PM, 11:45 PM)
+
+#### Timezone
+
+Set your IANA timezone for accurate time tracking when working across time zones. Common examples:
+
+- North America: `America/New_York`, `America/Chicago`, `America/Los_Angeles`
+- Europe: `Europe/London`, `Europe/Paris`, `Europe/Berlin`
+- Asia: `Asia/Tokyo`, `Asia/Singapore`, `Asia/Hong_Kong`
+- Oceania: `Australia/Sydney`, `Pacific/Auckland`
+
+Full list: [IANA Time Zone Database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 
 ## Project Configuration
 
@@ -30,7 +100,6 @@ tmpo init
 # - Project name (defaults to auto-detected name)
 # - Hourly rate (optional, press Enter to skip)
 # - Description (optional, press Enter to skip)
-# - Currency code (optional, defaults to USD)
 ```
 
 For quick setup without prompts, use the `--accept-defaults` flag:
@@ -58,9 +127,6 @@ hourly_rate: 125.50
 
 # [OPTIONAL] Description for this project
 description: Client project for Acme Corp
-
-# [OPTIONAL] Currency code for billing display (USD, EUR, GBP, JPY, etc.)
-currency: USD
 ```
 
 ### Configuration Fields
@@ -77,13 +143,12 @@ project_name: Client Website Redesign
 
 #### `hourly_rate` (optional)
 
-Your billing rate per hour. When set, tmpo will calculate estimated earnings based on tracked time. The currency symbol displayed is determined by the `currency` field (defaults to USD if not specified).
+Your billing rate per hour. When set, tmpo will calculate estimated earnings based on tracked time. The currency symbol displayed is determined by your global currency setting (see `tmpo config`).
 
 **Example:**
 
 ```yaml
 hourly_rate: 150.00
-currency: USD  # Will display as $150.00
 ```
 
 Set to `0` or omit to disable rate tracking:
@@ -101,47 +166,6 @@ A longer description or notes about the project. This is for your reference and 
 ```yaml
 description: Q1 2024 website redesign for Acme Corp. Main contact: john@acme.com
 ```
-
-#### `currency` (optional)
-
-The ISO 4217 currency code for displaying billing rates and earnings. This determines the currency symbol shown in stats, reports, and summaries.
-
-**Supported Currencies:**
-
-tmpo supports 30+ currencies including:
-
-- **Americas:** USD ($), CAD (CA$), BRL (R$), MXN (MX$)
-- **Europe:** EUR (€), GBP (£), CHF (Fr), SEK (kr), NOK (kr)
-- **Asia:** JPY (¥), CNY (¥), INR (₹), KRW (₩), SGD (S$)
-- **Oceania:** AUD (A$), NZD (NZ$)
-
-And many more. See the [full currency code list](https://en.wikipedia.org/wiki/ISO_4217#Active_codes).
-
-**Examples:**
-
-```yaml
-# US-based project
-hourly_rate: 150
-currency: USD
-# Displays as: $150.00
-
-# European project
-hourly_rate: 120
-currency: EUR
-# Displays as: €120.00
-
-# UK project
-hourly_rate: 100
-currency: GBP
-# Displays as: £100.00
-
-# Japanese project
-hourly_rate: 15000
-currency: JPY
-# Displays as: ¥15000.00
-```
-
-If not specified or if an unknown currency code is provided, `currency` defaults to USD. Currency codes are case-insensitive (USD, usd, or Usd all work).
 
 ## Project Detection Priority
 
@@ -196,19 +220,24 @@ tmpo init
 # Project name: Client A - Web Development
 # Hourly rate: 150
 # Description: [press Enter to skip]
-# Currency code: USD
 
-# Client B - £175/hour
+# Client B - different rate
 cd ~/projects/client-b
 tmpo init
 # Project name: Client B - Game Development
 # Hourly rate: 175
 # Description: [press Enter to skip]
-# Currency code: GBP
 
 # Personal project - no billing
 cd ~/projects/my-app
 tmpo init --accept-defaults  # Quick setup with defaults
+```
+
+To change currency display (affects all projects):
+
+```bash
+tmpo config
+# Select your preferred currency (USD, EUR, GBP, etc.)
 ```
 
 Alternatively, you can manually create `.tmporc` files:
@@ -218,7 +247,6 @@ Alternatively, you can manually create `.tmporc` files:
 cat > ~/projects/client-project/.tmporc << EOF
 project_name: Client Project - Web Development
 hourly_rate: 150.00
-currency: USD
 EOF
 ```
 
@@ -277,17 +305,22 @@ git config --global core.excludesfile ~/.gitignore_global
 ```bash
 # Create a backup of your time tracking database
 cp ~/.tmpo/tmpo.db ~/backups/tmpo-backup-$(date +%Y%m%d).db
+
+# Optionally backup your global config too
+cp ~/.tmpo/config.yaml ~/backups/tmpo-config-backup-$(date +%Y%m%d).yaml
 ```
 
 ### Moving to a New Machine
 
 ```bash
-# On old machine
+# On old machine - backup both database and config
 cp ~/.tmpo/tmpo.db ~/tmpo-export.db
+cp ~/.tmpo/config.yaml ~/tmpo-config.yaml
 
-# Transfer file to new machine, then:
+# Transfer files to new machine, then:
 mkdir -p ~/.tmpo
 cp ~/tmpo-export.db ~/.tmpo/tmpo.db
+cp ~/tmpo-config.yaml ~/.tmpo/config.yaml
 ```
 
 ### Exporting for External Tools
