@@ -53,10 +53,20 @@ goreleaser build --snapshot --clean
 - Schema: time_entries table with id, project_name, start_time, end_time, description, hourly_rate
 
 **Configuration** (`internal/config/`):
-- YAML-based config using `.tmporc` files
-- Config fields: project_name, hourly_rate, description
-- FindAndLoad() searches upward through parent directories for `.tmporc`
-- Supports per-project configuration by placing `.tmporc` in project root
+- **Per-Project Configuration**: YAML-based config using `.tmporc` files
+  - Config fields: project_name, hourly_rate, description
+  - FindAndLoad() searches upward through parent directories for `.tmporc`
+  - Supports per-project configuration by placing `.tmporc` in project root
+- **Global Configuration** (`~/.tmpo/config.yaml`):
+  - Managed via `tmpo config` command
+  - Settings: currency, date_format, time_format, timezone
+  - Currency is stored globally for consistent billing display
+  - Date format is selectable (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD)
+  - Time format is selectable (24-hour, 12-hour (AM/PM))
+  - Timezone uses IANA format with validation (e.g., America/New_York, UTC)
+  - Located at `$HOME/.tmpo/config.yaml`
+  - If missing, defaults are used (USD, empty formats, local timezone)
+  - LoadGlobalConfig() returns defaults if file doesn't exist (no error)
 
 **Project Detection** (`internal/project/`):
 - Three-tier detection strategy:

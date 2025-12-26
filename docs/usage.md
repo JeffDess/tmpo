@@ -108,7 +108,39 @@ tmpo stats --today  # Today's stats
 tmpo stats --week   # This week's stats
 ```
 
-## Project Configuration
+## Configuration
+
+### `tmpo config`
+
+Configure global user preferences that apply across all projects. This includes:
+
+- **Currency** - Your preferred currency for displaying earnings (USD, EUR, GBP, etc.)
+- **Date Format** - Choose between MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD
+- **Time Format** - Choose between 24-hour (15:30) or 12-hour (3:30 PM)
+- **Timezone** - IANA timezone for your location (e.g., America/New_York)
+
+**Usage:**
+
+```bash
+tmpo config
+# [tmpo] Global tmpo Configuration
+# Current settings:
+#   Currency:    USD
+#   Date format: MM/DD/YYYY
+#   Time format: 12-hour (AM/PM)
+#   Timezone:    (local)
+#
+# Currency code (press Enter for USD): EUR
+# Select date format: [use arrow keys]
+# Select time format: [use arrow keys]
+# Timezone (press Enter for local): Europe/London
+#
+# [tmpo] Configuration saved to ~/.tmpo/config.yaml
+```
+
+Settings are stored in `~/.tmpo/config.yaml` and affect how times and currency are displayed throughout tmpo.
+
+See [Configuration Guide](configuration.md#global-configuration) for more details.
 
 ### `tmpo init`
 

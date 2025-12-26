@@ -231,13 +231,12 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	ui.NewlineBelow()
 }
 
-// getCurrencyCode attempts to load the currency code from the current project's
-// .tmporc configuration file. If no config is found or currency is not set,
-// it returns "USD" as the default.
+// getCurrencyCode loads the currency code from the global configuration.
+// If the global config cannot be loaded, it returns the default currency.
 func getCurrencyCode() string {
-	cfg, _, err := config.FindAndLoad()
+	globalCfg, err := config.LoadGlobalConfig()
 	if err != nil {
-		return "USD"
+		return currency.DefaultCurrency
 	}
-	return cfg.GetCurrencyOrDefault()
+	return globalCfg.Currency
 }

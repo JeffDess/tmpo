@@ -159,8 +159,8 @@ func ManualCmd() *cobra.Command {
 			duration := entry.Duration()
 			fmt.Println()
 			ui.PrintSuccess(ui.EmojiSuccess, fmt.Sprintf("Created manual entry for %s", ui.Bold(entry.ProjectName)))
-			ui.PrintInfo(4, ui.Bold("Start"), startTime.Format("Jan 2, 2006 at 3:04 PM"))
-			ui.PrintInfo(4, ui.Bold("End"), endTime.Format("Jan 2, 2006 at 3:04 PM"))
+			ui.PrintInfo(4, ui.Bold("Start"), config.FormatDateTimeLong(startTime))
+			ui.PrintInfo(4, ui.Bold("End"), config.FormatDateTimeLong(endTime))
 			ui.PrintInfo(4, ui.Bold("Duration"), ui.FormatDuration(duration))
 
 			if entry.Description != "" {
@@ -168,10 +168,10 @@ func ManualCmd() *cobra.Command {
 			}
 
 			if entry.HourlyRate != nil {
-				// Get currency from config, fallback to USD
-				currencyCode := "USD"
-				if cfg, _, err := config.FindAndLoad(); err == nil {
-					currencyCode = cfg.GetCurrencyOrDefault()
+				// Get currency from global config
+				currencyCode := currency.DefaultCurrency
+				if globalCfg, err := config.LoadGlobalConfig(); err == nil {
+					currencyCode = globalCfg.Currency
 				}
 
 				earnings := entry.RoundedHours() * *entry.HourlyRate

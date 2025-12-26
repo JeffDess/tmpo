@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/DylanDevelops/tmpo/internal/config"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/DylanDevelops/tmpo/internal/ui"
 	"github.com/spf13/cobra"
@@ -74,7 +75,7 @@ func LogCmd() *cobra.Command {
 			currentDate := ""
 
 			for _, entry := range entries {
-				entryDate := entry.StartTime.Format("Mon, Jan 2, 2006")
+				entryDate := config.FormatDateLong(entry.StartTime)
 				if entryDate != currentDate {
 					if currentDate != "" {
 						fmt.Println()
@@ -87,9 +88,9 @@ func LogCmd() *cobra.Command {
 				duration := entry.Duration()
 				totalDuration += duration
 
-				timeRange := entry.StartTime.Format("03:04 PM") + " - "
+				timeRange := config.FormatTimePadded(entry.StartTime) + " - "
 				if entry.EndTime != nil {
-					timeRange += entry.EndTime.Format("03:04 PM") + "  "
+					timeRange += config.FormatTimePadded(*entry.EndTime) + "  "
 				} else {
 					timeRange += ui.Warning("(running)") + " "
 				}

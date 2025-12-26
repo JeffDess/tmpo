@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DylanDevelops/tmpo/internal/config"
 	"github.com/DylanDevelops/tmpo/internal/project"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/DylanDevelops/tmpo/internal/ui"
@@ -131,9 +132,9 @@ func EditCmd() *cobra.Command {
 			}
 
 			// Edit start date
-			currentStartDate := selectedEntry.StartTime.Format("01-02-2006")
+			currentStartDate := config.FormatDateDashed(selectedEntry.StartTime)
 			startDatePrompt := promptui.Prompt{
-				Label:     fmt.Sprintf("Start date (MM-DD-YYYY): (%s)", currentStartDate),
+				Label:     fmt.Sprintf("Start date: (%s)", currentStartDate),
 				Validate:  validateDateOptional,
 				AllowEdit: true,
 			}
@@ -150,7 +151,7 @@ func EditCmd() *cobra.Command {
 			}
 
 			// Edit start time
-			currentStartTime := selectedEntry.StartTime.Format("3:04 PM")
+			currentStartTime := config.FormatTime(selectedEntry.StartTime)
 			startTimePrompt := promptui.Prompt{
 				Label:     fmt.Sprintf("Start time (e.g., 9:30 AM or 14:30): (%s)", currentStartTime),
 				Validate:  validateTimeOptional,
@@ -169,9 +170,9 @@ func EditCmd() *cobra.Command {
 			}
 
 			// Edit end date
-			currentEndDate := selectedEntry.EndTime.Format("01-02-2006")
+			currentEndDate := config.FormatDateDashed(*selectedEntry.EndTime)
 			endDatePrompt := promptui.Prompt{
-				Label:     fmt.Sprintf("End date (MM-DD-YYYY): (%s)", currentEndDate),
+				Label:     fmt.Sprintf("End date: (%s)", currentEndDate),
 				Validate:  validateDateOptional,
 				AllowEdit: true,
 			}
@@ -188,7 +189,7 @@ func EditCmd() *cobra.Command {
 			}
 
 			// Edit end time
-			currentEndTime := selectedEntry.EndTime.Format("3:04 PM")
+			currentEndTime := config.FormatTime(*selectedEntry.EndTime)
 			endTimePrompt := promptui.Prompt{
 				Label:     fmt.Sprintf("End time (e.g., 5:00 PM or 17:00): (%s)", currentEndTime),
 				Validate:  validateTimeOptional,
@@ -264,8 +265,8 @@ func EditCmd() *cobra.Command {
 
 			if !selectedStartTrunc.Equal(editedStartTrunc) {
 				hasChanges = true
-				oldStr := selectedEntry.StartTime.Format("01-02-2006 3:04 PM")
-				newStr := editedEntry.StartTime.Format("01-02-2006 3:04 PM")
+				oldStr := config.FormatDateTimeDashed(selectedEntry.StartTime)
+				newStr := config.FormatDateTimeDashed(editedEntry.StartTime)
 				fmt.Printf("    %s %s → %s\n", ui.Bold("Start time:"), ui.Muted(oldStr), newStr)
 			}
 
@@ -274,8 +275,8 @@ func EditCmd() *cobra.Command {
 
 			if !selectedEndTrunc.Equal(editedEndTrunc) {
 				hasChanges = true
-				oldStr := selectedEntry.EndTime.Format("01-02-2006 3:04 PM")
-				newStr := editedEntry.EndTime.Format("01-02-2006 3:04 PM")
+				oldStr := config.FormatDateTimeDashed(*selectedEntry.EndTime)
+				newStr := config.FormatDateTimeDashed(*editedEntry.EndTime)
 				fmt.Printf("    %s %s → %s\n", ui.Bold("End time:"), ui.Muted(oldStr), newStr)
 			}
 
@@ -330,8 +331,8 @@ func EditCmd() *cobra.Command {
 // formatEntryLabel formats a time entry for display in the selection list
 // Format: "2024-05-21 9:30 AM → 10:30 AM (1h) - Fixed bug in UI"
 func formatEntryLabel(entry *storage.TimeEntry) string {
-	startStr := entry.StartTime.Format("2006-01-02 3:04 PM")
-	endStr := entry.EndTime.Format("3:04 PM")
+	startStr := config.FormatDateTimeDashed(entry.StartTime)
+	endStr := config.FormatTime(*entry.EndTime)
 	duration := entry.Duration()
 	durationStr := ui.FormatDuration(duration)
 
