@@ -33,7 +33,7 @@ func ConfigCmd() *cobra.Command {
 
 			// Show current settings
 			fmt.Println(ui.Bold("Current settings:"))
-			fmt.Printf("  Currency:    %s\n", ui.Bold(currentConfig.Currency))
+			fmt.Printf("  Currency:    %s\n", ui.Muted(currentConfig.Currency))
 
 			dateFormatDisplay := "(default)"
 			if currentConfig.DateFormat != "" {
