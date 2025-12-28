@@ -40,7 +40,7 @@ goreleaser build --snapshot --clean
 
 **CLI Layer** (`cmd/`):
 - Uses Cobra for command structure
-- Commands organized in subdirectories: tracking/, entries/, history/, setup/, utilities/, milestones/
+- Commands organized in subdirectories: tracking/, entries/, history/, setup/, config/, utilities/, milestones/
 - Each command is a constructor function that returns `*cobra.Command`
 - All commands explicitly registered in `cmd/root.go` RootCmd() function
 - Version information is injected via ldflags during build
@@ -81,6 +81,22 @@ goreleaser build --snapshot --clean
 - `csv.go`: Export to CSV format
 - `json.go`: Export to JSON format
 - Used by `export` command with filtering options
+
+**Currency** (`internal/currency/`):
+- Currency symbol lookup and formatting for 35+ currencies
+- FormatCurrency() for displaying monetary values with proper symbols
+- IsSupported() for currency code validation
+
+**Update Checker** (`internal/update/`):
+- CheckForUpdate() queries GitHub API for latest release version
+- CompareVersions() for semantic version comparison
+- Used by `version` command to notify users of new releases
+
+**UI** (`internal/ui/`):
+- ANSI color constants and text formatting utilities
+- Helper functions for consistent terminal output (Success, Error, Info, Warning)
+- FormatDuration() for human-readable time display
+- Emoji constants for visual feedback
 
 ### Key Patterns
 

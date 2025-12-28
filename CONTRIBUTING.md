@@ -139,7 +139,9 @@ tmpo/
 │   ├── settings/       # Configuration management (.tmporc and global config)
 │   ├── storage/        # SQLite database layer
 │   ├── project/        # Project detection logic
-│   ├── export/         # Export functionality
+│   ├── export/         # Export functionality (CSV, JSON)
+│   ├── currency/       # Currency formatting and symbol handling
+│   ├── update/         # Update checking from GitHub releases
 │   └── ui/             # UI helpers (formatting, colors, printing)
 ├── docs/               # User documentation
 │   ├── usage.md
@@ -162,6 +164,8 @@ tmpo/
 - **`internal/storage/`**: SQLite database operations and models
 - **`internal/project/`**: Project name detection logic (git/directory/config)
 - **`internal/export/`**: Export functionality (CSV, JSON)
+- **`internal/currency/`**: Currency formatting and symbol handling for billing
+- **`internal/update/`**: Update checking from GitHub releases
 - **`internal/ui/`**: UI helpers for formatting, colors, and terminal output
 - **`docs/`**: User-facing documentation and guides
 
