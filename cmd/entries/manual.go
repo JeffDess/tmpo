@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DylanDevelops/tmpo/internal/settings"
 	"github.com/DylanDevelops/tmpo/internal/currency"
 	"github.com/DylanDevelops/tmpo/internal/project"
+	"github.com/DylanDevelops/tmpo/internal/settings"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/DylanDevelops/tmpo/internal/ui"
 	"github.com/manifoldco/promptui"
@@ -197,6 +197,10 @@ func ManualCmd() *cobra.Command {
 
 			if entry.Description != "" {
 				ui.PrintInfo(4, ui.Bold("Description"), entry.Description)
+			}
+
+			if *entry.MilestoneName != "" {
+				ui.PrintInfo(4, ui.Bold("Milestone"), *entry.MilestoneName)
 			}
 
 			if entry.HourlyRate != nil {
