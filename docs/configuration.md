@@ -6,7 +6,7 @@ Learn how to configure tmpo for your projects and workflow.
 
 All time tracking data and configuration is stored locally on your machine:
 
-```
+```text
 ~/.tmpo/
   ├── tmpo.db          # SQLite database with time entries
   └── config.yaml      # Global configuration (optional)

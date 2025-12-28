@@ -375,8 +375,8 @@ tmpo export --output timesheet.csv       # Specify output file
 **CSV Format:**
 
 ```csv
-Project,Description,Milestone,Start,End,Duration (hours)
-my-project,Implementing feature,Sprint 1,2024-01-15 14:30:00,2024-01-15 16:45:00,2.25
+Project,Start Time,End Time,Duration (hours),Description,Milestone
+my-project,2024-01-15 14:30:00,2024-01-15 16:45:00,2.25,Implementing feature,Sprint 1
 ```
 
 **JSON Format:**
@@ -385,11 +385,11 @@ my-project,Implementing feature,Sprint 1,2024-01-15 14:30:00,2024-01-15 16:45:00
 [
   {
     "project": "my-project",
+    "start_time": "2024-01-15T14:30:00-05:00",
+    "end_time": "2024-01-15T16:45:00-05:00",
+    "duration_hours": 2.25,
     "description": "Implementing feature",
-    "milestone": "Sprint 1",
-    "start": "2024-01-15T14:30:00Z",
-    "end": "2024-01-15T16:45:00Z",
-    "duration_hours": 2.25
+    "milestone": "Sprint 1"
   }
 ]
 ```
@@ -432,11 +432,21 @@ tmpo export --week --output timesheet-$(date +%Y-%m-%d).csv
 Create a `.tmporc` file in each project directory with different hourly rates:
 
 ```bash
+# Client A - $150/hour
 cd ~/projects/client-a
-tmpo init --name "Client A" --rate 150
+tmpo init
+# Interactive prompts:
+# Project name (client-a): Client A
+# Hourly rate: 150
+# Description: [press Enter to skip]
 
+# Client B - $175/hour
 cd ~/projects/client-b
-tmpo init --name "Client B" --rate 175
+tmpo init
+# Interactive prompts:
+# Project name (client-b): Client B
+# Hourly rate: 175
+# Description: [press Enter to skip]
 ```
 
 Now `tmpo start` will automatically track to the correct project when you're in each directory.
