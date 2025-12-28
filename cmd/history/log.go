@@ -106,7 +106,11 @@ func LogCmd() *cobra.Command {
 
 				fmt.Printf("  %s  %s  %s\n", timeRange, ui.Bold(fmt.Sprintf("%-20s", entry.ProjectName)), ui.FormatDuration(duration))
 				if entry.MilestoneName != nil {
-					fmt.Printf("    %s %s %s\n", ui.Muted("├─"), ui.Muted("Milestone:"), *entry.MilestoneName)
+					symbol := "└─"
+					if entry.Description != "" {
+						symbol = "├─"
+					}
+					fmt.Printf("    %s %s %s\n", ui.Muted(symbol), ui.Muted("Milestone:"), *entry.MilestoneName)
 				}
 				if entry.Description != "" {
 					fmt.Printf("    %s %s\n", ui.Muted("└─"), entry.Description)
