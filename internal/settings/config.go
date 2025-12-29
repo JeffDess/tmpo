@@ -8,29 +8,14 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Config represents the project's configuration as loaded from a YAML file.
-// It contains identifying and billing information along with an optional description.
-//
-// ProjectName is the human-readable name of the project.
-// HourlyRate is the billable hourly rate for the project; when zero it will be omitted from YAML.
-// Description is an optional free-form description of the project; when empty it will be omitted from YAML.
-//
-// ! IMPORTANT When adding new fields to this struct, also update configTemplate below. !
+// IMPORTANT: When adding new fields to this struct, also update configTemplate below.
 type Config struct {
 	ProjectName string `yaml:"project_name"`
 	HourlyRate float64 `yaml:"hourly_rate,omitempty"`
 	Description string `yaml:"description,omitempty"`
 }
 
-// configTemplate is the template used when creating new .tmporc files via CreateWithTemplate.
-// It includes all available configuration options with helpful comments.
-//
-// Format placeholders:
-//   %s - project name (string)
-//   %.2f - hourly rate (float64, 2 decimal places)
-//   %s - description (string)
-//
-// ! IMPORTANT: When adding new fields to the Config struct above, update this template. !
+// IMPORTANT: When adding new fields to Config, update this template.
 const configTemplate = `# tmpo project configuration
 # This file configures time tracking settings for this project
 
@@ -44,9 +29,6 @@ hourly_rate: %.2f
 description: "%s"
 `
 
-// Load reads a YAML configuration file from the provided path and unmarshals it into a Config.
-// It returns a pointer to the populated Config on success. If the file cannot be read or the
-// contents cannot be parsed as YAML, Load returns a wrapped error describing the failure.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -61,10 +43,6 @@ func Load(path string) (*Config, error) {
 	return &config, nil
 }
 
-// Save marshals the Config into YAML and writes it to the provided filesystem path.
-// The configuration is encoded using yaml.Marshal and written with file mode 0644.
-// If a file already exists at path it will be overwritten. An error is returned
-// if marshaling fails or if writing the file to disk is unsuccessful.
 func (c *Config) Save(path string) error {
 	data, err := yaml.Marshal(c)
 	if err != nil {
@@ -78,10 +56,6 @@ func (c *Config) Save(path string) error {
 	return nil
 }
 
-// Create creates a new Config populated with projectName and hourlyRate and writes it
-// to a ".tmporc" file in the current working directory ("./.tmporc").
-// If a ".tmporc" file already exists, Create returns an error and does not overwrite it.
-// Any error encountered while saving the configuration is returned to the caller.
 func Create(projectName string, hourlyRate float64) error {
 	config := &Config{
 		ProjectName: projectName,
@@ -96,9 +70,6 @@ func Create(projectName string, hourlyRate float64) error {
 	return config.Save(tmporc)
 }
 
-// CreateWithTemplate creates a new .tmporc file with a user-friendly format that includes
-// all fields (even if empty) and helpful comments. This provides a better user experience
-// by showing all available configuration options.
 func CreateWithTemplate(projectName string, hourlyRate float64, description string) error {
 	tmporc := filepath.Join(".", ".tmporc")
 	if _, err := os.Stat(tmporc); err == nil {
@@ -114,16 +85,6 @@ func CreateWithTemplate(projectName string, hourlyRate float64, description stri
 	return nil
 }
 
-// FindAndLoad searches upward from the current working directory for a file named
-// ".tmporc". Starting at os.Getwd(), it ascends parent directories until it either
-// finds the file or reaches the filesystem root.
-//
-// If a ".tmporc" file is found, FindAndLoad calls Load(path) and returns the resulting
-// *Config, the absolute path to the discovered file, and any error returned by Load.
-// If Load returns an error the returned *Config may be nil.
-//
-// If the current working directory cannot be determined, or if no ".tmporc" is found
-// before reaching the root, FindAndLoad returns (nil, "", err) describing the failure.
 func FindAndLoad() (*Config, string, error) {
 	dir, err := os.Getwd()
 	if err != nil {

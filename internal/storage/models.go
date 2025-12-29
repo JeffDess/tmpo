@@ -5,12 +5,6 @@ import (
 	"time"
 )
 
-// TimeEntry represents a recorded period of work on a project.
-// It includes a unique identifier, the project name, the start time,
-// an optional end time (nil indicates the entry is still in progress),
-// a free-form description of the work performed, an optional hourly rate
-// (nil indicates no rate was configured when the entry was created), and
-// an optional milestone name (nil indicates the entry is not part of any milestone).
 type TimeEntry struct {
 	ID int64
 	ProjectName string
@@ -21,9 +15,6 @@ type TimeEntry struct {
 	MilestoneName *string
 }
 
-// Duration returns the elapsed time for the TimeEntry.
-// If EndTime is non-nil, it returns the difference EndTime.Sub(StartTime).
-// If EndTime is nil (the entry is ongoing), it returns time.Since(StartTime).
 func (t *TimeEntry) Duration() time.Duration {
 	if( t.EndTime == nil) {
 		return time.Since(t.StartTime)
@@ -32,28 +23,16 @@ func (t *TimeEntry) Duration() time.Duration {
 	return t.EndTime.Sub(t.StartTime)
 }
 
-// IsRunning reports whether the TimeEntry is currently running.
-// It returns true when EndTime is nil, indicating no end timestamp has been set.
 func (t *TimeEntry) IsRunning() bool {
 	return t.EndTime == nil
 }
 
-// RoundedHours returns the duration in hours rounded to 2 decimal places.
-// This rounding is used for earnings calculations to ensure transparency:
-// the displayed hours value (e.g., "1.83 hours") matches exactly what is
-// used in billing calculations.
-//
-// Future enhancement: This could be made configurable via user settings
-// to support different rounding increments (e.g., 0.1 hours for 6-minute billing,
-// or 0.25 hours for 15-minute billing).
+// RoundedHours returns duration in hours rounded to 2 decimal places for billing.
+// Could be made configurable to support different rounding increments (0.1h, 0.25h, etc).
 func (t *TimeEntry) RoundedHours() float64 {
 	return math.Round(t.Duration().Hours()*100) / 100
 }
 
-// Milestone represents a time-boxed period for grouping time entries.
-// It includes a unique identifier, the project name it belongs to, the milestone name,
-// the start time when it was created, and an optional end time (nil indicates the
-// milestone is still active).
 type Milestone struct {
 	ID          int64
 	ProjectName string
@@ -62,15 +41,10 @@ type Milestone struct {
 	EndTime     *time.Time
 }
 
-// IsActive reports whether the Milestone is currently active.
-// It returns true when EndTime is nil, indicating no end timestamp has been set.
 func (m *Milestone) IsActive() bool {
 	return m.EndTime == nil
 }
 
-// Duration returns the elapsed time for the Milestone.
-// If EndTime is non-nil, it returns the difference EndTime.Sub(StartTime).
-// If EndTime is nil (the milestone is ongoing), it returns time.Since(StartTime).
 func (m *Milestone) Duration() time.Duration {
 	if m.EndTime == nil {
 		return time.Since(m.StartTime)
