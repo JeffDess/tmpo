@@ -8,23 +8,6 @@ import (
 	"github.com/DylanDevelops/tmpo/internal/storage"
 )
 
-// ToCSV writes the provided slice of time entries to a CSV file at the given
-// filename. The file is created (or truncated if it already exists) and a CSV
-// writer is used to emit a header row followed by one record per entry.
-//
-// The CSV contains the following columns in order:
-//   - "Project"            : entry.ProjectName
-//   - "Start Time"         : entry.StartTime formatted as "2006-01-02 15:04:05"
-//   - "End Time"           : entry.EndTime formatted as "2006-01-02 15:04:05" or
-//                           an empty string if EndTime is nil
-//   - "Duration (hours)"   : entry.Duration() expressed in hours, formatted
-//                           with two decimal places
-//   - "Description"        : entry.Description
-//
-// The function returns an error if the file cannot be created or if writing
-// any header/record fails. The CSV writer is flushed before returning, and the
-// file is closed via deferred cleanup. The caller should ensure the provided
-// filename is writable.
 func ToCSV(entries []*storage.TimeEntry, filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
