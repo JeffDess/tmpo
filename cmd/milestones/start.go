@@ -10,9 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StartCmd returns a command that creates and activates a new milestone for the current project.
-// If a milestone with the same name already exists for the project, or if there is already an
-// active milestone, an error is displayed and the command exits.
 func StartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start [name]",

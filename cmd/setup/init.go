@@ -128,7 +128,6 @@ func InitCmd() *cobra.Command {
 	return cmd
 }
 
-// detectDefaultProjectName returns the auto-detected project name
 func detectDefaultProjectName() string {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -150,7 +149,6 @@ func detectDefaultProjectName() string {
 	return name
 }
 
-// validateHourlyRate validates that the input is empty or a valid positive number
 func validateHourlyRate(input string) error {
 	input = strings.TrimSpace(input)
 	if input == "" {
@@ -169,7 +167,6 @@ func validateHourlyRate(input string) error {
 	return nil
 }
 
-// validateCurrency validates that the input is empty or a valid currency code format
 func validateCurrency(input string) error {
 	input = strings.TrimSpace(input)
 	if input == "" {

@@ -168,7 +168,6 @@ func ConfigCmd() *cobra.Command {
 	return cmd
 }
 
-// validateCurrency validates that the input is empty or a valid currency code format
 func validateCurrency(input string) error {
 	input = strings.TrimSpace(input)
 	if input == "" {
@@ -190,7 +189,6 @@ func validateCurrency(input string) error {
 	return nil
 }
 
-// validateTimezone validates that the input is empty or a valid IANA timezone format
 func validateTimezone(input string) error {
 	input = strings.TrimSpace(input)
 	if input == "" {

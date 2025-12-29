@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// FinishCmd returns a command that finishes the currently active milestone for the current project.
-// If there is no active milestone, an error is displayed and the command exits.
 func FinishCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "finish",

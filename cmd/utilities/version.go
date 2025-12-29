@@ -31,24 +31,17 @@ func VersionCmd() *cobra.Command {
 	return cmd
 }
 
-// DisplayVersionWithUpdateCheck displays the version information and checks for updates.
-// This is the single source of truth for displaying version info with update notifications.
 func DisplayVersionWithUpdateCheck() {
 	fmt.Print(GetVersionOutput())
 	checkForUpdates()
 }
 
-// GetVersionOutput returns the formatted version string used by both
-// the version subcommand and the -v/--version flags
 func GetVersionOutput() string {
 	versionLine := fmt.Sprintf("tmpo version %s %s", ui.Success(Version), ui.Muted(GetFormattedDate(Date)))
 	changelogLine := ui.Muted(GetChangelogUrl(Version))
 	return fmt.Sprintf("\n%s\n%s\n\n", versionLine, changelogLine)
 }
 
-// GetFormattedDate parses inputDate as an RFC3339 timestamp and returns the date
-// formatted as "MM-DD-YYYY" wrapped in parentheses (for example "(01-02-2006)").
-// If inputDate is empty or cannot be parsed as RFC3339, it returns an empty string.
 func GetFormattedDate(inputDate string) string {
 	date, err := time.Parse(time.RFC3339, inputDate)
 	if err != nil {
@@ -69,8 +62,6 @@ func GetChangelogUrl(version string) string {
 	return fmt.Sprintf("%s/releases/tag/v%s", path, strings.TrimPrefix(version, "v"))
 }
 
-// checkForUpdates checks if a newer version is available and displays a message if so.
-// It silently fails if there's no internet connection or if the check fails.
 func checkForUpdates() {
 	// Only check if we have a valid version (not "dev" or empty)
 	if Version == "" || Version == "dev" {

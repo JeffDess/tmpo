@@ -12,8 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd returns a command that displays information about the currently active milestone
-// for the current project. If there is no active milestone, an info message is displayed.
 func StatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",

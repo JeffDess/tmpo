@@ -79,22 +79,6 @@ func StatsCmd() *cobra.Command {
 	return cmd
 }
 
-// ShowPeriodStats prints aggregated statistics for a named period to standard
-// output. Given a slice of *storage.TimeEntry and a human-readable periodName,
-// the function:
-//
-//  - returns early with a message if entries is empty,
-//  - computes and prints the total accumulated time and its hour equivalent,
-//  - prints the total number of entries,
-//  - aggregates time by project and prints a per-project line with duration and
-//    percentage of the total,
-//  - attempts to load configuration and, if a positive hourly rate is present,
-//    prints an estimated earnings line.
-//
-// Aggregation is done via a map[string]time.Duration; iteration order is
-// therefore non-deterministic. Percentages are computed as projectSeconds /
-// totalSeconds * 100, so if the total duration is zero the percentage values
-// may be undefined (NaN/Inf). All output is produced using fmt.
 func ShowPeriodStats(entries []*storage.TimeEntry, periodName string) {
 	if len(entries) == 0 {
 		ui.PrintWarning(ui.EmojiWarning, fmt.Sprintf("No entries for %s.", periodName))
@@ -135,7 +119,6 @@ func ShowPeriodStats(entries []*storage.TimeEntry, periodName string) {
 	fmt.Println()
 	ui.PrintInfo(4, ui.Bold("By Project"), "")
 
-	// Sort projects alphabetically for consistent display order
 	var projects []string
 	for project := range projectStats {
 		projects = append(projects, project)
@@ -155,21 +138,6 @@ func ShowPeriodStats(entries []*storage.TimeEntry, periodName string) {
 	ui.NewlineBelow()
 }
 
-// ShowAllTimeStats prints aggregated all-time statistics to standard output.
-// Given a slice of *storage.TimeEntry and a pointer to the database, the
-// function:
-//
-//  - returns early with a message if entries is empty,
-//  - computes and prints the total accumulated time and its hour equivalent,
-//  - prints the total number of entries and number of tracked projects,
-//  - aggregates time by project and prints a per-project line with duration and
-//    percentage of the total.
-//
-// The function fetches the list of projects from the provided database to
-// determine the number of projects tracked. Aggregation is done via a
-// map[string]time.Duration; iteration order is therefore non-deterministic.
-// If the total duration is zero, percentage values may be undefined. All
-// output is produced using fmt.
 func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	if len(entries) == 0 {
 		ui.PrintWarning(ui.EmojiWarning, "No entries found.")
@@ -211,7 +179,6 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	fmt.Println()
 	ui.PrintInfo(4, ui.Bold("By Project"), "")
 
-	// Sort projects alphabetically for consistent display order
 	var projects []string
 	for project := range projectStats {
 		projects = append(projects, project)
@@ -231,8 +198,6 @@ func ShowAllTimeStats(entries []*storage.TimeEntry, db *storage.Database) {
 	ui.NewlineBelow()
 }
 
-// getCurrencyCode loads the currency code from the global configuration.
-// If the global config cannot be loaded, it returns the default currency.
 func getCurrencyCode() string {
 	globalCfg, err := settings.LoadGlobalConfig()
 	if err != nil {

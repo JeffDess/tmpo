@@ -131,7 +131,6 @@ func EditCmd() *cobra.Command {
 
 			selectedEntry := items[idx].Entry
 
-			// Create a copy of the entry for editing
 			editedEntry := &storage.TimeEntry{
 				ID:          selectedEntry.ID,
 				ProjectName: selectedEntry.ProjectName,
@@ -258,7 +257,6 @@ func EditCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Update the edited entry
 			editedEntry.StartTime = newStartTime
 			editedEntry.EndTime = &newEndTime
 			editedEntry.Description = descriptionInput
@@ -303,7 +301,6 @@ func EditCmd() *cobra.Command {
 
 			fmt.Println()
 
-			// Confirm save
 			confirmPrompt := promptui.Select{
 				Label: "Save changes?",
 				Items: []string{"Yes", "No"},
@@ -338,8 +335,6 @@ func EditCmd() *cobra.Command {
 	return cmd
 }
 
-// formatEntryLabel formats a time entry for display in the selection list
-// Format: "2024-05-21 9:30 AM → 10:30 AM (1h) - Fixed bug in UI"
 func formatEntryLabel(entry *storage.TimeEntry) string {
 	startStr := settings.FormatDateTimeDashed(entry.StartTime)
 	endStr := settings.FormatTime(*entry.EndTime)
@@ -354,9 +349,6 @@ func formatEntryLabel(entry *storage.TimeEntry) string {
 	return fmt.Sprintf("%s → %s (%s) - %s", startStr, endStr, durationStr, description)
 }
 
-// validateDateOptional validates date input for edit mode, allowing empty input
-// Empty input is valid (indicates keeping current value)
-// Non-empty input is validated using the same rules as validateDate
 func validateDateOptional(input, layout, displayFormat string) error {
 	if input == "" {
 		return nil
@@ -364,9 +356,6 @@ func validateDateOptional(input, layout, displayFormat string) error {
 	return validateDate(input, layout, displayFormat)
 }
 
-// validateTimeOptional validates time input for edit mode, allowing empty input
-// Empty input is valid (indicates keeping current value)
-// Non-empty input is validated using the same rules as validateTime
 func validateTimeOptional(input string) error {
 	if input == "" {
 		return nil

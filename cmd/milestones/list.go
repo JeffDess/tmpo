@@ -16,8 +16,6 @@ var (
 	listAll     bool
 )
 
-// ListCmd returns a command that lists milestones. By default, it lists milestones for the current project.
-// Use --all to list milestones from all projects, or --project to list milestones for a specific project.
 func ListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",

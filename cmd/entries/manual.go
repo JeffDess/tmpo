@@ -15,9 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getDateFormatInfo returns the display format and Go time layout for the given date format configuration.
-// It converts the user-facing format (e.g., "MM/DD/YYYY") to both a display format with dashes
-// (e.g., "MM-DD-YYYY") and the corresponding Go time layout (e.g., "01-02-2006").
 func getDateFormatInfo(configFormat string) (displayFormat, layout string) {
 	switch configFormat {
 	case "MM/DD/YYYY":
@@ -249,10 +246,6 @@ func ManualCmd() *cobra.Command {
 	return cmd
 }
 
-// validateDate validates that the provided input is a non-empty date string in the specified format.
-// It attempts to parse the input using the provided layout and returns an error if parsing fails.
-// It also rejects dates that are more than 24 hours in the future (i.e., strictly after time.Now().Add(24*time.Hour)).
-// Returns nil if the input is valid.
 func validateDate(input, layout, displayFormat string) error {
 	if input == "" {
 		return fmt.Errorf("date cannot be empty")
@@ -270,11 +263,6 @@ func validateDate(input, layout, displayFormat string) error {
 	return nil
 }
 
-// validateTime validates the provided time string.
-// It accepts 12-hour formats with an AM/PM designator (e.g., "9:30 AM", "09:30 PM")
-// and 24-hour format (e.g., "14:30"). Empty input yields an error. The function
-// normalizes AM/PM markers before parsing and returns nil on success or an error
-// describing the expected formats on failure.
 func validateTime(input string) error {
 	if input == "" {
 		return fmt.Errorf("time cannot be empty")
@@ -298,14 +286,6 @@ func validateTime(input string) error {
 }
 
 
-// validateEndDateTime verifies that the end date/time represented by
-// endDate and endTime is a valid datetime and occurs strictly after the
-// start date/time represented by startDate and startTime.
-// It returns nil when the end datetime is strictly after the start datetime.
-// If parsing of the start or end datetime fails, it returns an error
-// wrapping the parse error (prefixed with "invalid start datetime" or
-// "invalid end datetime"). If the end is not after the start, it
-// returns an error stating that the end time must be after the start time.
 func validateEndDateTime(startDate, startTime, endDate, endTime, dateLayout string) error {
 	start, err := parseDateTime(startDate, startTime, dateLayout)
 	if err != nil {
@@ -324,8 +304,6 @@ func validateEndDateTime(startDate, startTime, endDate, endTime, dateLayout stri
 	return nil
 }
 
-// parseDateTime combines date and time strings into time.Time
-// Expects date in the specified format and time in either 12-hour (with AM/PM) or 24-hour format
 func parseDateTime(date, timeStr, dateLayout string) (time.Time, error) {
 	normalizedTime := normalizeAMPM(timeStr)
 	dateTime := fmt.Sprintf("%s %s", date, normalizedTime)
@@ -341,12 +319,10 @@ func parseDateTime(date, timeStr, dateLayout string) (time.Time, error) {
 	return time.ParseInLocation(dateLayout + " 15:04", dateTime, time.Local)
 }
 
-// normalizeAMPM converts lowercase am/pm to uppercase AM/PM
 func normalizeAMPM(input string) string {
 	return strings.ToUpper(input)
 }
 
-// detectProjectNameWithSource returns the project name
 func detectProjectNameWithSource() (string) {
 	if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil && cfg.ProjectName != "" {
 		return cfg.ProjectName
