@@ -48,10 +48,28 @@ func StartCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
+			// check if this name is already in use currently or in the past
+			existingMilestone, err := db.GetMilestoneByName(projectName, milestoneName)
+			if err != nil {
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+				os.Exit(1)
+			}
+
+			if existingMilestone != nil {
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("Milestone '%s' already exists for %s", milestoneName, projectName))
+				if existingMilestone.IsActive() {
+					ui.PrintMuted(0, "This milestone is currently active. Use a different name or finish it first.")
+				} else {
+					ui.PrintMuted(0, "This milestone has already been finished. Use a different name for the new milestone.")
+				}
+				ui.NewlineBelow()
+				os.Exit(1)
+			}
+
 			// Create the milestone
 			milestone, err := db.CreateMilestone(projectName, milestoneName)
 			if err != nil {
-				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("failed to create milestone: %v", err))
 				os.Exit(1)
 			}
 
