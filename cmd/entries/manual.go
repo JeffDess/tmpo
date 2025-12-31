@@ -223,7 +223,7 @@ func ManualCmd() *cobra.Command {
 				ui.PrintInfo(4, ui.Bold("Description"), entry.Description)
 			}
 
-			if *entry.MilestoneName != "" {
+			if entry.MilestoneName != nil && *entry.MilestoneName != "" {
 				ui.PrintInfo(4, ui.Bold("Milestone"), *entry.MilestoneName)
 			}
 
