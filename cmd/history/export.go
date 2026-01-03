@@ -8,6 +8,7 @@ import (
 
 	"github.com/DylanDevelops/tmpo/internal/export"
 	"github.com/DylanDevelops/tmpo/internal/project"
+	"github.com/DylanDevelops/tmpo/internal/settings"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/DylanDevelops/tmpo/internal/ui"
 	"github.com/spf13/cobra"
@@ -78,6 +79,34 @@ func ExportCmd() *cobra.Command {
 				os.Exit(0)
 			}
 
+			var exportPath string
+
+			// Try to load .tmporc config first
+			if config, _, err := settings.FindAndLoad(); err == nil && config.ExportPath != "" {
+				exportPath = config.ExportPath
+			} else {
+				// Fall back to global config
+				if globalConfig, err := settings.LoadGlobalConfig(); err == nil && globalConfig.ExportPath != "" {
+					exportPath = globalConfig.ExportPath
+				}
+			}
+
+			// If exportPath is set, expand ~ to home directory
+			if exportPath != "" {
+				if exportPath[:1] == "~" {
+					home, err := os.UserHomeDir()
+					if err == nil {
+						exportPath = filepath.Join(home, exportPath[1:])
+					}
+				}
+
+				// Ensure the export path directory exists
+				if err := os.MkdirAll(exportPath, 0755); err != nil {
+					ui.PrintError(ui.EmojiError, fmt.Sprintf("Failed to create export directory: %v", err))
+					os.Exit(1)
+				}
+			}
+
 			filename := exportOutput
 			if filename == "" {
 				timestamp := time.Now().Format("2006-01-02")
@@ -94,6 +123,11 @@ func ExportCmd() *cobra.Command {
 				filename += ".csv"
 			} else if exportFormat == "json" && filepath.Ext(filename) != ".json" {
 				filename += ".json"
+			}
+
+			// Prepend export path if configured
+			if exportPath != "" {
+				filename = filepath.Join(exportPath, filepath.Base(filename))
 			}
 
 			switch exportFormat {

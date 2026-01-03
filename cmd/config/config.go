@@ -52,6 +52,12 @@ func ConfigCmd() *cobra.Command {
 				timezoneDisplay = currentConfig.Timezone
 			}
 			fmt.Printf("  Timezone:    %s\n", ui.Muted(timezoneDisplay))
+
+			exportPathDisplay := "(current directory)"
+			if currentConfig.ExportPath != "" {
+				exportPathDisplay = currentConfig.ExportPath
+			}
+			fmt.Printf("  Export path: %s\n", ui.Muted(exportPathDisplay))
 			fmt.Println()
 
 			// Currency prompt
@@ -129,12 +135,31 @@ func ConfigCmd() *cobra.Command {
 				timezone = currentConfig.Timezone
 			}
 
+			// Export path prompt
+			fmt.Println()
+			fmt.Println(ui.Muted("Default export directory for time entries (supports ~ for home directory)"))
+			exportPathPrompt := promptui.Prompt{
+				Label: "Export path (press Enter for current directory)",
+			}
+
+			exportPathInput, err := exportPathPrompt.Run()
+			if err != nil {
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+				os.Exit(1)
+			}
+
+			exportPath := strings.TrimSpace(exportPathInput)
+			if exportPath == "" {
+				exportPath = currentConfig.ExportPath
+			}
+
 			// Create new config with updated values
 			newConfig := &settings.GlobalConfig{
 				Currency:   currencyCode,
 				DateFormat: dateFormat,
 				TimeFormat: timeFormat,
 				Timezone:   timezone,
+				ExportPath: exportPath,
 			}
 
 			// Save the config
@@ -159,6 +184,10 @@ func ConfigCmd() *cobra.Command {
 
 			if timezone != "" {
 				ui.PrintInfo(4, ui.Bold("Timezone"), timezone)
+			}
+
+			if exportPath != "" {
+				ui.PrintInfo(4, ui.Bold("Export path"), exportPath)
 			}
 
 			ui.NewlineBelow()

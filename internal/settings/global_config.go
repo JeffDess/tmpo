@@ -15,6 +15,7 @@ type GlobalConfig struct {
 	DateFormat string `yaml:"date_format,omitempty"`
 	TimeFormat string `yaml:"time_format,omitempty"`
 	Timezone   string `yaml:"timezone,omitempty"`
+	ExportPath string `yaml:"export_path,omitempty"`
 }
 
 func DefaultGlobalConfig() *GlobalConfig {
@@ -23,6 +24,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 		DateFormat: "",
 		TimeFormat: "",
 		Timezone:   "",
+		ExportPath: "",
 	}
 }
 

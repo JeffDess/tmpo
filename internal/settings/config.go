@@ -13,6 +13,7 @@ type Config struct {
 	ProjectName string `yaml:"project_name"`
 	HourlyRate float64 `yaml:"hourly_rate,omitempty"`
 	Description string `yaml:"description,omitempty"`
+	ExportPath  string `yaml:"export_path,omitempty"`
 }
 
 // IMPORTANT: When adding new fields to Config, update this template.
@@ -27,6 +28,9 @@ hourly_rate: %.2f
 
 # [OPTIONAL] Description for this project
 description: "%s"
+
+# [OPTIONAL] Default export path for this project (overrides global export path)
+# export_path: ""
 `
 
 func Load(path string) (*Config, error) {
