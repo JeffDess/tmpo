@@ -190,9 +190,11 @@ func ConfigCmd() *cobra.Command {
 				ui.PrintInfo(4, ui.Bold("Timezone"), timezone)
 			}
 
+			exportPathDisplay = "(current directory)"
 			if exportPath != "" {
-				ui.PrintInfo(4, ui.Bold("Export path"), exportPath)
+				exportPathDisplay = exportPath
 			}
+			ui.PrintInfo(4, ui.Bold("Export path"), exportPathDisplay)
 
 			ui.NewlineBelow()
 		},
