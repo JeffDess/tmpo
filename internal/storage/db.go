@@ -68,6 +68,11 @@ func Initialize() (*Database, error) {
 		return nil, fmt.Errorf("failed to create milestones table: %w", err)
 	}
 
+	_, err = db.Exec(`ALTER TABLE time_entries ADD COLUMN hourly_rate REAL`)
+	if err != nil && !isColumnExistsError(err) {
+		return nil, fmt.Errorf("failed to add hourly_rate column: %w", err)
+	}
+
 	_, err = db.Exec(`ALTER TABLE time_entries ADD COLUMN milestone_name TEXT`)
 	if err != nil && !isColumnExistsError(err) {
 		return nil, fmt.Errorf("failed to add milestone_name column: %w", err)
