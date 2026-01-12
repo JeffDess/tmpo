@@ -161,7 +161,7 @@ tmpo/
   - **`cmd/config/`**: Global configuration command (config/settings/preferences)
   - **`cmd/milestones/`**: Milestone management commands (start, finish, status, list)
 - **`internal/settings/`**: Configuration management (`.tmporc` files and global `config.yaml`)
-- **`internal/storage/`**: SQLite database operations and models
+- **`internal/storage/`**: SQLite database operations, models, and migrations
 - **`internal/project/`**: Project name detection logic (git/directory/config)
 - **`internal/export/`**: Export functionality (CSV, JSON)
 - **`internal/currency/`**: Currency formatting and symbol handling for billing
@@ -185,9 +185,13 @@ All user data is stored locally in:
 
 The database schema includes:
 
-- Time entries (start/end times, project, description, hourly rate)
-- Project metadata (derived from entries)
+- **time_entries**: Time tracking entries (start/end times, project, description, hourly rate, milestone)
+- **milestones**: Project milestones for organizing work
+- **settings**: Migration tracking and other metadata (e.g., `001_utc_timestamps`)
 - Automatic indexing for fast queries
+
+> [!IMPORTANT]
+> All timestamps are stored in UTC and converted to the user's configured timezone for display.
 
 > [!NOTE]
 > See [Development Mode](#development-mode) for information on using the development database during local development.
@@ -201,6 +205,69 @@ When a user runs `tmpo start`, the project name is detected in this priority ord
 3. **Directory name** - Falls back to current directory name
 
 This logic lives in `internal/project/detect.go`.
+
+### Database Migrations
+
+When you need to modify the database schema, use the migration system in `internal/storage/migrations.go`:
+
+1. **Add a migration constant:**
+
+   ```go
+   const (
+       Migration001_UTCTimestamps = "001_utc_timestamps"
+       Migration002_YourFeature   = "002_your_feature"  // New migration
+   )
+   ```
+
+2. **Create your migration function:**
+
+   ```go
+   func (d *Database) migrateYourFeature() error {
+       completed, err := d.hasMigrationRun(Migration002_YourFeature)
+       if err != nil || completed {
+           return err
+       }
+
+       tx, err := d.db.Begin()
+       if err != nil {
+           return fmt.Errorf("failed to begin transaction: %w", err)
+       }
+       defer func() {
+           if err != nil {
+               tx.Rollback()
+           }
+       }()
+
+       // Your migration logic here
+
+       // Mark complete
+       _, err = tx.Exec(
+           "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
+           Migration002_YourFeature, "completed", time.Now().UTC(),
+       )
+       if err != nil {
+           return err
+       }
+
+       return tx.Commit()
+   }
+   ```
+
+3. **Register in `runMigrations()`:**
+
+   ```go
+   func (d *Database) runMigrations() error {
+       if err := d.migrateTimestampsToUTC(); err != nil {
+           return fmt.Errorf("timestamp UTC migration failed: %w", err)
+       }
+       if err := d.migrateYourFeature(); err != nil {
+           return fmt.Errorf("your feature migration failed: %w", err)
+       }
+       return nil
+   }
+   ```
+
+**Important:** Migrations run automatically on `Initialize()` and are wrapped in transactions for safety. If a migration fails, all changes are rolled back.
 
 ## Making Changes
 
