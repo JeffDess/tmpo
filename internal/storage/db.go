@@ -15,6 +15,12 @@ type Database struct {
 	db *sql.DB
 }
 
+// Migration keys
+// ! I'm adding this system so that future database migrations will be easier - Dylan
+const (
+	Migration001_UTCTimestamps = "001_utc_timestamps"
+)
+
 func Initialize() (*Database, error) {
 	homeDir, err := os.UserHomeDir()
 
@@ -88,7 +94,25 @@ func Initialize() (*Database, error) {
 		return nil, fmt.Errorf("failed to create index: %w", err)
 	}
 
-	return &Database{db: db}, nil
+	// settings table for tracking migrations and other metadata
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS settings (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at DATETIME NOT NULL
+		)
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create settings table: %w", err)
+	}
+
+	database := &Database{db: db}
+
+	if err := database.runMigrations(); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return database, nil
 }
 
 func isColumnExistsError(err error) bool {
@@ -114,7 +138,7 @@ func (d *Database) CreateEntry(projectName, description string, hourlyRate *floa
 	result, err := d.db.Exec(
 		"INSERT INTO time_entries (project_name, start_time, description, hourly_rate, milestone_name) VALUES (?, ?, ?, ?, ?)",
 		projectName,
-		time.Now(),
+		time.Now().UTC(),
 		description,
 		rate,
 		milestone,
@@ -144,11 +168,14 @@ func (d *Database) CreateManualEntry(projectName, description string, startTime,
 		milestone = sql.NullString{String: *milestoneName, Valid: true}
 	}
 
+	startTimeUTC := startTime.UTC()
+	endTimeUTC := endTime.UTC()
+
 	result, err := d.db.Exec(
 		"INSERT INTO time_entries (project_name, start_time, end_time, description, hourly_rate, milestone_name) VALUES (?, ?, ?, ?, ?, ?)",
 		projectName,
-		startTime,
-		endTime,
+		startTimeUTC,
+		endTimeUTC,
 		description,
 		rate,
 		milestone,
@@ -244,7 +271,7 @@ func (d *Database) GetLastStoppedEntry() (*TimeEntry, error) {
 func (d *Database) StopEntry(id int64) error {
 	_, err := d.db.Exec(
 		"UPDATE time_entries SET end_time = ? WHERE id = ?",
-		time.Now(),
+		time.Now().UTC(),
 		id,
 	)
 
@@ -526,9 +553,11 @@ func (d *Database) GetCompletedEntriesByProject(projectName string) ([]*TimeEntr
 }
 
 func (d *Database) UpdateTimeEntry(id int64, entry *TimeEntry) error {
+	startTimeUTC := entry.StartTime.UTC()
+
 	var endTime sql.NullTime
 	if entry.EndTime != nil {
-		endTime = sql.NullTime{Time: *entry.EndTime, Valid: true}
+		endTime = sql.NullTime{Time: entry.EndTime.UTC(), Valid: true}
 	}
 
 	var hourlyRate sql.NullFloat64
@@ -545,7 +574,7 @@ func (d *Database) UpdateTimeEntry(id int64, entry *TimeEntry) error {
 		UPDATE time_entries
 		SET project_name = ?, start_time = ?, end_time = ?, description = ?, hourly_rate = ?, milestone_name = ?
 		WHERE id = ?
-	`, entry.ProjectName, entry.StartTime, endTime, entry.Description, hourlyRate, milestoneName, id)
+	`, entry.ProjectName, startTimeUTC, endTime, entry.Description, hourlyRate, milestoneName, id)
 
 	if err != nil {
 		return fmt.Errorf("failed to update entry: %w", err)
@@ -567,7 +596,7 @@ func (d *Database) CreateMilestone(projectName, name string) (*Milestone, error)
 		"INSERT INTO milestones (project_name, name, start_time) VALUES (?, ?, ?)",
 		projectName,
 		name,
-		time.Now(),
+		time.Now().UTC(),
 	)
 
 	if err != nil {
@@ -719,7 +748,7 @@ func (d *Database) GetAllMilestones() ([]*Milestone, error) {
 func (d *Database) FinishMilestone(id int64) error {
 	_, err := d.db.Exec(
 		"UPDATE milestones SET end_time = ? WHERE id = ?",
-		time.Now(),
+		time.Now().UTC(),
 		id,
 	)
 
@@ -774,4 +803,227 @@ func (d *Database) GetEntriesByMilestone(projectName, milestoneName string) ([]*
 
 func (d *Database) Close() error {
 	return d.db.Close()
+}
+
+// Migration infrastructure
+
+// hasMigrationRun checks if a specific migration has already been executed
+func (d *Database) hasMigrationRun(migrationKey string) (bool, error) {
+	var value string
+	err := d.db.QueryRow("SELECT value FROM settings WHERE key = ?", migrationKey).Scan(&value)
+
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("failed to check migration status: %w", err)
+	}
+
+	return value == "completed", nil
+}
+
+// markMigrationComplete marks a migration as completed
+func (d *Database) markMigrationComplete(migrationKey string) error {
+	_, err := d.db.Exec(
+		"INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
+		migrationKey,
+		"completed",
+		time.Now().UTC(),
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to mark migration complete: %w", err)
+	}
+
+	return nil
+}
+
+// runMigrations executes all pending migrations
+func (d *Database) runMigrations() error {
+	// Migration 1: Convert all timestamps to UTC
+	if err := d.migrateTimestampsToUTC(); err != nil {
+		return fmt.Errorf("timestamp UTC migration failed: %w", err)
+	}
+
+	return nil
+}
+
+// migrateTimestampsToUTC converts all existing timestamps from local timezone to UTC
+func (d *Database) migrateTimestampsToUTC() error {
+	// Check if already migrated
+	completed, err := d.hasMigrationRun(Migration001_UTCTimestamps)
+	if err != nil {
+		return err
+	}
+
+	if completed {
+		// Migration already completed, skip
+		return nil
+	}
+
+	// Start transaction for safety - if anything fails, nothing changes
+	tx, err := d.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Ensure we rollback on any error
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Migrate time_entries table
+	if err = d.migrateTimeEntriesTableToUTC(tx); err != nil {
+		return fmt.Errorf("failed to migrate time_entries: %w", err)
+	}
+
+	// Migrate milestones table
+	if err = d.migrateMilestonesTableToUTC(tx); err != nil {
+		return fmt.Errorf("failed to migrate milestones: %w", err)
+	}
+
+	// Mark migration as complete (within the transaction)
+	_, err = tx.Exec(
+		"INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
+		Migration001_UTCTimestamps,
+		"completed",
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to mark migration complete: %w", err)
+	}
+
+	// Commit transaction - only now do changes take effect
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit migration transaction: %w", err)
+	}
+
+	return nil
+}
+
+// migrateTimeEntriesTableToUTC converts all time_entries timestamps to UTC
+func (d *Database) migrateTimeEntriesTableToUTC(tx *sql.Tx) error {
+	// Get all entries
+	rows, err := tx.Query("SELECT id, start_time, end_time FROM time_entries")
+	if err != nil {
+		return fmt.Errorf("failed to query time_entries: %w", err)
+	}
+	defer rows.Close()
+
+	type entryUpdate struct {
+		id        int64
+		startTime time.Time
+		endTime   sql.NullTime
+	}
+
+	var updates []entryUpdate
+
+	for rows.Next() {
+		var entry entryUpdate
+
+		if err := rows.Scan(&entry.id, &entry.startTime, &entry.endTime); err != nil {
+			return fmt.Errorf("failed to scan entry: %w", err)
+		}
+
+		// Check if start_time needs conversion (not already UTC)
+		needsUpdate := false
+
+		if entry.startTime.Location() != time.UTC {
+			entry.startTime = entry.startTime.UTC()
+			needsUpdate = true
+		}
+
+		if entry.endTime.Valid && entry.endTime.Time.Location() != time.UTC {
+			entry.endTime.Time = entry.endTime.Time.UTC()
+			needsUpdate = true
+		}
+
+		if needsUpdate {
+			updates = append(updates, entry)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error iterating entries: %w", err)
+	}
+
+	// Apply updates
+	for _, update := range updates {
+		_, err := tx.Exec(
+			"UPDATE time_entries SET start_time = ?, end_time = ? WHERE id = ?",
+			update.startTime,
+			update.endTime,
+			update.id,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update entry %d: %w", update.id, err)
+		}
+	}
+
+	return nil
+}
+
+// migrateMilestonesTableToUTC converts all milestones timestamps to UTC
+func (d *Database) migrateMilestonesTableToUTC(tx *sql.Tx) error {
+	// Get all milestones
+	rows, err := tx.Query("SELECT id, start_time, end_time FROM milestones")
+	if err != nil {
+		return fmt.Errorf("failed to query milestones: %w", err)
+	}
+	defer rows.Close()
+
+	type milestoneUpdate struct {
+		id        int64
+		startTime time.Time
+		endTime   sql.NullTime
+	}
+
+	var updates []milestoneUpdate
+
+	for rows.Next() {
+		var milestone milestoneUpdate
+
+		if err := rows.Scan(&milestone.id, &milestone.startTime, &milestone.endTime); err != nil {
+			return fmt.Errorf("failed to scan milestone: %w", err)
+		}
+
+		// Check if timestamps need conversion (not already UTC)
+		needsUpdate := false
+
+		if milestone.startTime.Location() != time.UTC {
+			milestone.startTime = milestone.startTime.UTC()
+			needsUpdate = true
+		}
+
+		if milestone.endTime.Valid && milestone.endTime.Time.Location() != time.UTC {
+			milestone.endTime.Time = milestone.endTime.Time.UTC()
+			needsUpdate = true
+		}
+
+		if needsUpdate {
+			updates = append(updates, milestone)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error iterating milestones: %w", err)
+	}
+
+	// Apply updates
+	for _, update := range updates {
+		_, err := tx.Exec(
+			"UPDATE milestones SET start_time = ?, end_time = ? WHERE id = ?",
+			update.startTime,
+			update.endTime,
+			update.id,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update milestone %d: %w", update.id, err)
+		}
+	}
+
+	return nil
 }
