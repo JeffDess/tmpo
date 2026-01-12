@@ -402,12 +402,16 @@ func (d *Database) GetEntriesByProject(projectName string) ([]*TimeEntry, error)
 }
 
 func (d *Database) GetEntriesByDateRange(start, end time.Time) ([]*TimeEntry, error) {
+	// Convert to UTC for consistent comparison with stored timestamps
+	startUTC := start.UTC()
+	endUTC := end.UTC()
+
 	rows, err := d.db.Query(`
 		SELECT id, project_name, start_time, end_time, description, hourly_rate, milestone_name
 		FROM time_entries
 		WHERE start_time BETWEEN ? AND ?
 		ORDER BY start_time DESC
-	`, start, end)
+	`, startUTC, endUTC)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query entries: %w", err)
