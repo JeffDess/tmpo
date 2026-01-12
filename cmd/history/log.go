@@ -47,7 +47,7 @@ func LogCmd() *cobra.Command {
 				}
 				entries, err = db.GetEntriesByMilestone(projectName, logMilestone)
 			} else if logToday {
-				start := time.Now().Truncate(24 * time.Hour)
+				start := time.Now().Truncate(24 * time.Hour).UTC()
 				end := start.Add(24 * time.Hour)
 				entries, err = db.GetEntriesByDateRange(start, end)
 			} else if logWeek {
@@ -57,7 +57,7 @@ func LogCmd() *cobra.Command {
 					weekday = 7 // sunday
 				}
 
-				start := now.AddDate(0, 0, -weekday+1).Truncate(24 * time.Hour)
+				start := now.AddDate(0, 0, -weekday+1).Truncate(24 * time.Hour).UTC()
 				end := start.AddDate(0, 0, 7)
 				entries, err = db.GetEntriesByDateRange(start, end)
 			} else if logProject != "" {

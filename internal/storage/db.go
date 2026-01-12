@@ -88,7 +88,25 @@ func Initialize() (*Database, error) {
 		return nil, fmt.Errorf("failed to create index: %w", err)
 	}
 
-	return &Database{db: db}, nil
+	// settings table for tracking migrations and other metadata
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS settings (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at DATETIME NOT NULL
+		)
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create settings table: %w", err)
+	}
+
+	database := &Database{db: db}
+
+	if err := database.runMigrations(); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return database, nil
 }
 
 func isColumnExistsError(err error) bool {
@@ -114,7 +132,7 @@ func (d *Database) CreateEntry(projectName, description string, hourlyRate *floa
 	result, err := d.db.Exec(
 		"INSERT INTO time_entries (project_name, start_time, description, hourly_rate, milestone_name) VALUES (?, ?, ?, ?, ?)",
 		projectName,
-		time.Now(),
+		time.Now().UTC(),
 		description,
 		rate,
 		milestone,
@@ -144,11 +162,14 @@ func (d *Database) CreateManualEntry(projectName, description string, startTime,
 		milestone = sql.NullString{String: *milestoneName, Valid: true}
 	}
 
+	startTimeUTC := startTime.UTC()
+	endTimeUTC := endTime.UTC()
+
 	result, err := d.db.Exec(
 		"INSERT INTO time_entries (project_name, start_time, end_time, description, hourly_rate, milestone_name) VALUES (?, ?, ?, ?, ?, ?)",
 		projectName,
-		startTime,
-		endTime,
+		startTimeUTC,
+		endTimeUTC,
 		description,
 		rate,
 		milestone,
@@ -244,7 +265,7 @@ func (d *Database) GetLastStoppedEntry() (*TimeEntry, error) {
 func (d *Database) StopEntry(id int64) error {
 	_, err := d.db.Exec(
 		"UPDATE time_entries SET end_time = ? WHERE id = ?",
-		time.Now(),
+		time.Now().UTC(),
 		id,
 	)
 
@@ -526,9 +547,11 @@ func (d *Database) GetCompletedEntriesByProject(projectName string) ([]*TimeEntr
 }
 
 func (d *Database) UpdateTimeEntry(id int64, entry *TimeEntry) error {
+	startTimeUTC := entry.StartTime.UTC()
+
 	var endTime sql.NullTime
 	if entry.EndTime != nil {
-		endTime = sql.NullTime{Time: *entry.EndTime, Valid: true}
+		endTime = sql.NullTime{Time: entry.EndTime.UTC(), Valid: true}
 	}
 
 	var hourlyRate sql.NullFloat64
@@ -545,7 +568,7 @@ func (d *Database) UpdateTimeEntry(id int64, entry *TimeEntry) error {
 		UPDATE time_entries
 		SET project_name = ?, start_time = ?, end_time = ?, description = ?, hourly_rate = ?, milestone_name = ?
 		WHERE id = ?
-	`, entry.ProjectName, entry.StartTime, endTime, entry.Description, hourlyRate, milestoneName, id)
+	`, entry.ProjectName, startTimeUTC, endTime, entry.Description, hourlyRate, milestoneName, id)
 
 	if err != nil {
 		return fmt.Errorf("failed to update entry: %w", err)
@@ -567,7 +590,7 @@ func (d *Database) CreateMilestone(projectName, name string) (*Milestone, error)
 		"INSERT INTO milestones (project_name, name, start_time) VALUES (?, ?, ?)",
 		projectName,
 		name,
-		time.Now(),
+		time.Now().UTC(),
 	)
 
 	if err != nil {
@@ -719,7 +742,7 @@ func (d *Database) GetAllMilestones() ([]*Milestone, error) {
 func (d *Database) FinishMilestone(id int64) error {
 	_, err := d.db.Exec(
 		"UPDATE milestones SET end_time = ? WHERE id = ?",
-		time.Now(),
+		time.Now().UTC(),
 		id,
 	)
 
