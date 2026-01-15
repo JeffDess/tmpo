@@ -65,13 +65,13 @@ func CompareVersions(current, latest string) int {
 	latestCore, latestPrerelease := splitPrerelease(latest)
 
 	coreComparison := compareCoreVersions(currentCore, latestCore)
-	
+
 	// return early if core versions differ
 	if coreComparison != 0 {
 		return coreComparison
 	}
 
-	// prerelease is always less than stable (e.g., 1.0.0-rc.1 < 1.0.0)
+	// prerelease is always less than stable
 	if currentPrerelease != "" && latestPrerelease == "" {
 		return -1
 	}
