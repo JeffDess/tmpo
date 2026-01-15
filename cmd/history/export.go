@@ -92,10 +92,15 @@ func ExportCmd() *cobra.Command {
 			}
 
 			if exportPath != "" {
-				if exportPath[:1] == "~" {
+				if len(exportPath) >= 2 && exportPath[:2] == "~/" {
 					home, err := os.UserHomeDir()
 					if err == nil {
-						exportPath = filepath.Join(home, exportPath[1:])
+						exportPath = filepath.Join(home, exportPath[2:])
+					}
+				} else if exportPath == "~" {
+					home, err := os.UserHomeDir()
+					if err == nil {
+						exportPath = home
 					}
 				}
 
