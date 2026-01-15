@@ -60,6 +60,50 @@ func CompareVersions(current, latest string) int {
 	current = strings.TrimPrefix(current, "v")
 	latest = strings.TrimPrefix(latest, "v")
 
+	// separate out normal version and prerelease
+	currentCore, currentPrerelease := splitPrerelease(current)
+	latestCore, latestPrerelease := splitPrerelease(latest)
+
+	coreComparison := compareCoreVersions(currentCore, latestCore)
+
+	// return early if core versions differ
+	if coreComparison != 0 {
+		return coreComparison
+	}
+
+	// prerelease is always less than stable
+	if currentPrerelease != "" && latestPrerelease == "" {
+		return -1
+	}
+
+	// stable is always greater than prerelease
+	if currentPrerelease == "" && latestPrerelease != "" {
+		return 1
+	}
+
+	// both are prereleases, compare alphabetically
+	if currentPrerelease != "" && latestPrerelease != "" {
+		if currentPrerelease < latestPrerelease {
+			return -1
+		}
+		if currentPrerelease > latestPrerelease {
+			return 1
+		}
+	}
+
+	return 0
+}
+
+// splitPrerelease separates out version and prerelease tag
+func splitPrerelease(version string) (core, prerelease string) {
+	if idx := strings.Index(version, "-"); idx != -1 {
+		return version[:idx], version[idx+1:]
+	}
+	return version, ""
+}
+
+// compareCoreVersions compares major.minor.patch numerically
+func compareCoreVersions(current, latest string) int {
 	currentParts := strings.Split(current, ".")
 	latestParts := strings.Split(latest, ".")
 

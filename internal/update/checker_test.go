@@ -79,6 +79,54 @@ func TestCompareVersions(t *testing.T) {
 			latest:   "1.2",
 			expected: 1,
 		},
+		{
+			name:     "prerelease is less than stable",
+			current:  "1.0.0-rc.1",
+			latest:   "1.0.0",
+			expected: -1,
+		},
+		{
+			name:     "stable is greater than prerelease",
+			current:  "1.0.0",
+			latest:   "1.0.0-rc.1",
+			expected: 1,
+		},
+		{
+			name:     "prerelease alpha less than beta",
+			current:  "1.0.0-alpha",
+			latest:   "1.0.0-beta",
+			expected: -1,
+		},
+		{
+			name:     "prerelease beta less than rc",
+			current:  "1.0.0-beta",
+			latest:   "1.0.0-rc.1",
+			expected: -1,
+		},
+		{
+			name:     "same prerelease version",
+			current:  "1.0.0-rc.1",
+			latest:   "1.0.0-rc.1",
+			expected: 0,
+		},
+		{
+			name:     "prerelease with v prefix",
+			current:  "v1.0.0-rc.1",
+			latest:   "v1.0.0",
+			expected: -1,
+		},
+		{
+			name:     "older prerelease than newer stable",
+			current:  "1.0.0-beta",
+			latest:   "1.1.0",
+			expected: -1,
+		},
+		{
+			name:     "newer stable than older prerelease",
+			current:  "1.1.0",
+			latest:   "1.0.0-rc.1",
+			expected: 1,
+		},
 	}
 
 	for _, tt := range tests {
