@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/DylanDevelops/tmpo/internal/project"
 	"github.com/DylanDevelops/tmpo/internal/storage"
 	"github.com/DylanDevelops/tmpo/internal/ui"
 	"github.com/spf13/cobra"
@@ -13,7 +14,7 @@ func ResumeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resume",
 		Short: "Resume time tracking",
-		Long:  `Resume time tracking by starting a new session with the same project and description as the last paused session.`,
+		Long:  `Resume time tracking by starting a new session with the same project and description as the last stopped session for the current project.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ui.NewlineAbove()
 
@@ -38,14 +39,20 @@ func ResumeCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			lastStopped, err := db.GetLastStoppedEntry()
+			projectName, err := project.DetectConfiguredProject()
+			if err != nil {
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
+				os.Exit(1)
+			}
+
+			lastStopped, err := db.GetLastStoppedEntryByProject(projectName)
 			if err != nil {
 				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
 				os.Exit(1)
 			}
 
 			if lastStopped == nil {
-				ui.PrintError(ui.EmojiError, "No previous session found to resume.")
+				ui.PrintError(ui.EmojiError, fmt.Sprintf("No previous session found for project '%s' to resume.", projectName))
 				ui.PrintMuted(0, "Use 'tmpo start' to begin a new session.")
 				ui.NewlineBelow()
 				os.Exit(1)

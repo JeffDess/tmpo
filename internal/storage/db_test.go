@@ -194,6 +194,86 @@ func TestGetLastStoppedEntry(t *testing.T) {
 	assert.NotEqual(t, entry3.ID, stopped.ID)
 }
 
+func TestGetLastStoppedEntryByProject(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	// No stopped entries initially
+	stopped, err := db.GetLastStoppedEntryByProject("project-1")
+	assert.NoError(t, err)
+	assert.Nil(t, stopped)
+
+	// Create and stop first entry for project-1
+	entry1, err := db.CreateEntry("project-1", "first task", nil, nil)
+	assert.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+	err = db.StopEntry(entry1.ID)
+	assert.NoError(t, err)
+
+	// Should return the stopped entry for project-1
+	stopped, err = db.GetLastStoppedEntryByProject("project-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, stopped)
+	assert.Equal(t, entry1.ID, stopped.ID)
+	assert.Equal(t, "project-1", stopped.ProjectName)
+	assert.NotNil(t, stopped.EndTime)
+
+	// Create and stop entry for project-2 (more recent globally)
+	time.Sleep(10 * time.Millisecond)
+	entry2, err := db.CreateEntry("project-2", "second task", nil, nil)
+	assert.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+	err = db.StopEntry(entry2.ID)
+	assert.NoError(t, err)
+
+	// Should still return entry1 for project-1, not entry2
+	stopped, err = db.GetLastStoppedEntryByProject("project-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, stopped)
+	assert.Equal(t, entry1.ID, stopped.ID)
+	assert.Equal(t, "project-1", stopped.ProjectName)
+	assert.NotEqual(t, entry2.ID, stopped.ID)
+
+	// Should return entry2 for project-2
+	stopped, err = db.GetLastStoppedEntryByProject("project-2")
+	assert.NoError(t, err)
+	assert.NotNil(t, stopped)
+	assert.Equal(t, entry2.ID, stopped.ID)
+	assert.Equal(t, "project-2", stopped.ProjectName)
+
+	// Create another stopped entry for project-1 (most recent for that project)
+	time.Sleep(10 * time.Millisecond)
+	entry3, err := db.CreateEntry("project-1", "third task", nil, nil)
+	assert.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+	err = db.StopEntry(entry3.ID)
+	assert.NoError(t, err)
+
+	// Should return entry3 for project-1 now (most recent)
+	stopped, err = db.GetLastStoppedEntryByProject("project-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, stopped)
+	assert.Equal(t, entry3.ID, stopped.ID)
+	assert.Equal(t, "project-1", stopped.ProjectName)
+	assert.Equal(t, "third task", stopped.Description)
+
+	// Create a running entry for project-1
+	entry4, err := db.CreateEntry("project-1", "running task", nil, nil)
+	assert.NoError(t, err)
+
+	// Should still return entry3 (last stopped), not the running entry4
+	stopped, err = db.GetLastStoppedEntryByProject("project-1")
+	assert.NoError(t, err)
+	assert.NotNil(t, stopped)
+	assert.Equal(t, entry3.ID, stopped.ID)
+	assert.NotEqual(t, entry4.ID, stopped.ID)
+
+	// Query for non-existent project
+	stopped, err = db.GetLastStoppedEntryByProject("non-existent")
+	assert.NoError(t, err)
+	assert.Nil(t, stopped)
+}
+
 func TestStopEntry(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
