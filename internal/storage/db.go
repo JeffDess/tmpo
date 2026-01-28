@@ -262,6 +262,43 @@ func (d *Database) GetLastStoppedEntry() (*TimeEntry, error) {
 	return &entry, nil
 }
 
+func (d *Database) GetLastStoppedEntryByProject(projectName string) (*TimeEntry, error) {
+	var entry TimeEntry
+	var endTime sql.NullTime
+	var hourlyRate sql.NullFloat64
+	var milestoneName sql.NullString
+
+	err := d.db.QueryRow(`
+		SELECT id, project_name, start_time, end_time, description, hourly_rate, milestone_name
+		FROM time_entries
+		WHERE end_time IS NOT NULL AND project_name = ?
+		ORDER BY start_time DESC
+		LIMIT 1
+	`, projectName).Scan(&entry.ID, &entry.ProjectName, &entry.StartTime, &endTime, &entry.Description, &hourlyRate, &milestoneName)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get last stopped entry for project: %w", err)
+	}
+
+	if endTime.Valid {
+		entry.EndTime = &endTime.Time
+	}
+
+	if hourlyRate.Valid {
+		entry.HourlyRate = &hourlyRate.Float64
+	}
+
+	if milestoneName.Valid {
+		entry.MilestoneName = &milestoneName.String
+	}
+
+	return &entry, nil
+}
+
 func (d *Database) StopEntry(id int64) error {
 	_, err := d.db.Exec(
 		"UPDATE time_entries SET end_time = ? WHERE id = ?",
