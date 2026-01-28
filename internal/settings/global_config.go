@@ -92,8 +92,8 @@ func (gc *GlobalConfig) Save() error {
 	return nil
 }
 
-// getDisplayTimezone returns the user's configured timezone or local timezone as fallback
-func getDisplayTimezone() *time.Location {
+// GetDisplayTimezone returns the user's configured timezone or local timezone as fallback
+func GetDisplayTimezone() *time.Location {
 	cfg, err := LoadGlobalConfig()
 	if err != nil || cfg.Timezone == "" {
 		return time.Local
@@ -109,7 +109,7 @@ func getDisplayTimezone() *time.Location {
 
 // toDisplayTime converts a UTC time to the user's display timezone
 func toDisplayTime(t time.Time) time.Time {
-	return t.In(getDisplayTimezone())
+	return t.In(GetDisplayTimezone())
 }
 
 func FormatTime(t time.Time) string {
