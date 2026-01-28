@@ -308,15 +308,15 @@ func parseDateTime(date, timeStr, dateLayout string) (time.Time, error) {
 	normalizedTime := normalizeAMPM(timeStr)
 	dateTime := fmt.Sprintf("%s %s", date, normalizedTime)
 
-	if dt, err := time.ParseInLocation(dateLayout + " 3:04 PM", dateTime, time.Local); err == nil {
+	if dt, err := time.ParseInLocation(dateLayout + " 3:04 PM", dateTime, settings.GetDisplayTimezone()); err == nil {
 		return dt, nil
 	}
 
-	if dt, err := time.ParseInLocation(dateLayout + " 03:04 PM", dateTime, time.Local); err == nil {
+	if dt, err := time.ParseInLocation(dateLayout + " 03:04 PM", dateTime, settings.GetDisplayTimezone()); err == nil {
 		return dt, nil
 	}
 
-	return time.ParseInLocation(dateLayout + " 15:04", dateTime, time.Local)
+	return time.ParseInLocation(dateLayout + " 15:04", dateTime, settings.GetDisplayTimezone())
 }
 
 func normalizeAMPM(input string) string {
