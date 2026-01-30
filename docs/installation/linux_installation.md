@@ -16,7 +16,7 @@ This guide will walk you through installing tmpo on Linux.
    - **x86_64 (64-bit)**: `tmpo_X.X.X_Linux_x86_64.tar.gz`
    - **ARM64**: `tmpo_X.X.X_Linux_arm64.tar.gz`
 
-> [!NOTE]  
+> [!NOTE]
 > Replace `X.X.X` with the latest version number, e.g., `0.1.0`
 
 You can also download using curl or wget:
@@ -136,6 +136,78 @@ chmod +x ~/bin/tmpo
 
 ```bash
 tmpo --version
+```
+
+## Method 3: Nix (flake)
+
+Run tmpo without installing:
+
+```bash
+# Pass any tmpo command after "--"
+nix run github:DylanDevelops/tmpo -- start
+```
+
+Or add `tmpo` to your flake inputs and your favorite install method in the outputs:
+
+```nix
+{
+  inputs = {
+    tmpo = {
+      url = "github:DylanDevelops/tmpo";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { nixpkgs, ... }@inputs:
+  {
+    nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
+      modules = [
+        # Package only
+        ({ pkgs, ... }: {
+          environment.systemPackages = [ inputs.tmpo.packages.${pkgs.system}.default ];
+        })
+        # OR NixOS Module
+        inputs.tmpo.nixosModules.tmpo
+      ];
+    };
+
+   # OR Home Manager module
+    homeConfigurations."me" = home-manager.lib.homeManagerConfiguration {
+      modules = [
+        inputs.tmpo.homeManagerModules.tmpo
+      ];
+    };
+  };
+  };
+}
+```
+
+### NixOS module
+
+```nix
+{
+  programs.tmpo = {
+    enable = true;
+    devMode = false;
+  };
+}
+```
+
+### Home Manager module
+
+```nix
+{
+  programs.tmpo = {
+    enable = true;
+    settings = {
+      currency = "USD";
+      dateFormat = "MM/DD/YYYY"; # `MM/DD/YYYY`, `DD/MM/YYYY`, `YYYY-MM-DD`
+      timeFormat = "24-hour"; # `24-hour`, `12-hour (AM/PM)`
+      timezone = "America/New_York";
+      exportPath = "~/Documents/timesheets";
+    };
+  };
+}
 ```
 
 ## Determining Your Architecture

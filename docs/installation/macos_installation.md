@@ -109,6 +109,10 @@ sudo chmod +x /usr/local/bin/tmpo
 tmpo --version
 ```
 
+## Method 4: Nix (flake)
+
+Nix installation is configured in a similar fashion to Linux. Follow the same steps from [Method 3: Nix (flake)](./linux_installation.md#method-3-nix-flake) and use nix-darwin/Home Manager where applicable.
+
 ## Alternative Installation Locations
 
 If you prefer not to use `/usr/local/bin/`, you can install to your home directory:
