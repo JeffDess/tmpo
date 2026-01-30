@@ -33,12 +33,33 @@ func DetectProject() (string, error) {
 
 
 func DetectConfiguredProject() (string, error) {
+	return DetectConfiguredProjectWithOverride("")
+}
+
+// DetectConfiguredProjectWithOverride detects the project (priority: specific project name > .tmporc > git repo > directory name)
+func DetectConfiguredProjectWithOverride(explicitProject string) (string, error) {
+	// first priority: --project flag
+	if explicitProject != "" {
+		registry, err := settings.LoadProjects()
+		if err != nil {
+			return "", fmt.Errorf("failed to load projects registry: %w", err)
+		}
+
+		if !registry.Exists(explicitProject) {
+			return "", fmt.Errorf("project '%s' not found in global registry", explicitProject)
+		}
+
+		return explicitProject, nil
+	}
+
+	// second priority: .tmporc configuration
 	if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil {
 		if cfg.ProjectName != "" {
 			return cfg.ProjectName, nil
 		}
 	}
 
+	// third priority: directory-based detection
 	return DetectProject()
 }
 
@@ -92,4 +113,31 @@ func GetGitRoot() (string, error) {
 	}
 
 	return strings.TrimSpace(string(output)), nil
+}
+
+// GetProjectConfig retrieves project configuration for a given project name.
+// Returns hourly rate and export path if configured
+func GetProjectConfig(projectName string) (*float64, string, error) {
+	// check if global project
+	registry, err := settings.LoadProjects()
+	if err == nil && registry.Exists(projectName) {
+		project, err := registry.GetProject(projectName)
+		if err == nil {
+			return project.HourlyRate, project.ExportPath, nil
+		}
+	}
+
+	// fall back to .tmporc
+	cfg, _, err := settings.FindAndLoad()
+	if err == nil && cfg != nil && cfg.ProjectName == projectName {
+		var hourlyRate *float64
+		if cfg.HourlyRate > 0 {
+			rate := cfg.HourlyRate
+			hourlyRate = &rate
+		}
+		return hourlyRate, cfg.ExportPath, nil
+	}
+
+	// no configuration exists
+	return nil, "", nil
 }

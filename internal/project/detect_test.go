@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/DylanDevelops/tmpo/internal/settings"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -196,5 +197,209 @@ func TestDetectProject(t *testing.T) {
 		name, err := DetectProject()
 		assert.NoError(t, err)
 		assert.Equal(t, "fallback-project", name)
+	})
+}
+
+func TestDetectConfiguredProjectWithOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	os.Setenv("HOME", tmpDir)
+	os.Setenv("TMPO_DEV", "1")
+
+	t.Run("returns explicit project when provided and exists", func(t *testing.T) {
+		// Create global project registry
+		registry := &settings.ProjectsRegistry{
+			Projects: []settings.GlobalProject{
+				{Name: "Global Project"},
+			},
+		}
+		err := registry.Save()
+		assert.NoError(t, err)
+
+		name, err := DetectConfiguredProjectWithOverride("Global Project")
+		assert.NoError(t, err)
+		assert.Equal(t, "Global Project", name)
+	})
+
+	t.Run("returns error when explicit project doesn't exist", func(t *testing.T) {
+		// Empty registry
+		registry := &settings.ProjectsRegistry{Projects: []settings.GlobalProject{}}
+		err := registry.Save()
+		assert.NoError(t, err)
+
+		_, err = DetectConfiguredProjectWithOverride("Non-existent")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "not found in global registry")
+	})
+
+	t.Run("falls back to tmporc when no explicit project", func(t *testing.T) {
+		originalDir, err := os.Getwd()
+		assert.NoError(t, err)
+		defer os.Chdir(originalDir)
+
+		projectDir := t.TempDir()
+		tmporc := filepath.Join(projectDir, ".tmporc")
+		err = os.WriteFile(tmporc, []byte("project_name: Local Project\n"), 0644)
+		assert.NoError(t, err)
+
+		err = os.Chdir(projectDir)
+		assert.NoError(t, err)
+
+		name, err := DetectConfiguredProjectWithOverride("")
+		assert.NoError(t, err)
+		assert.Equal(t, "Local Project", name)
+	})
+
+	t.Run("explicit project takes priority over tmporc", func(t *testing.T) {
+		// Create global project
+		registry := &settings.ProjectsRegistry{
+			Projects: []settings.GlobalProject{
+				{Name: "Global Project"},
+			},
+		}
+		err := registry.Save()
+		assert.NoError(t, err)
+
+		// Create .tmporc
+		originalDir, err := os.Getwd()
+		assert.NoError(t, err)
+		defer os.Chdir(originalDir)
+
+		projectDir := t.TempDir()
+		tmporc := filepath.Join(projectDir, ".tmporc")
+		err = os.WriteFile(tmporc, []byte("project_name: Local Project\n"), 0644)
+		assert.NoError(t, err)
+
+		err = os.Chdir(projectDir)
+		assert.NoError(t, err)
+
+		// Explicit project should override tmporc
+		name, err := DetectConfiguredProjectWithOverride("Global Project")
+		assert.NoError(t, err)
+		assert.Equal(t, "Global Project", name)
+	})
+}
+
+func TestGetProjectConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	os.Setenv("HOME", tmpDir)
+	os.Setenv("TMPO_DEV", "1")
+
+	t.Run("retrieves config from global project", func(t *testing.T) {
+		rate := 125.0
+		registry := &settings.ProjectsRegistry{
+			Projects: []settings.GlobalProject{
+				{
+					Name:       "Global Project",
+					HourlyRate: &rate,
+					ExportPath: "/tmp/global",
+				},
+			},
+		}
+		err := registry.Save()
+		assert.NoError(t, err)
+
+		hourlyRate, exportPath, err := GetProjectConfig("Global Project")
+		assert.NoError(t, err)
+		assert.NotNil(t, hourlyRate)
+		assert.Equal(t, 125.0, *hourlyRate)
+		assert.Equal(t, "/tmp/global", exportPath)
+	})
+
+	t.Run("retrieves config from tmporc", func(t *testing.T) {
+		originalDir, err := os.Getwd()
+		assert.NoError(t, err)
+		defer os.Chdir(originalDir)
+
+		projectDir := t.TempDir()
+		tmporc := filepath.Join(projectDir, ".tmporc")
+		content := `project_name: Local Project
+hourly_rate: 100.0
+export_path: /tmp/local
+`
+		err = os.WriteFile(tmporc, []byte(content), 0644)
+		assert.NoError(t, err)
+
+		err = os.Chdir(projectDir)
+		assert.NoError(t, err)
+
+		hourlyRate, exportPath, err := GetProjectConfig("Local Project")
+		assert.NoError(t, err)
+		assert.NotNil(t, hourlyRate)
+		assert.Equal(t, 100.0, *hourlyRate)
+		assert.Equal(t, "/tmp/local", exportPath)
+	})
+
+	t.Run("returns nil for project without config", func(t *testing.T) {
+		hourlyRate, exportPath, err := GetProjectConfig("Non-existent Project")
+		assert.NoError(t, err)
+		assert.Nil(t, hourlyRate)
+		assert.Empty(t, exportPath)
+	})
+
+	t.Run("returns nil hourly rate when not set in tmporc", func(t *testing.T) {
+		originalDir, err := os.Getwd()
+		assert.NoError(t, err)
+		defer os.Chdir(originalDir)
+
+		projectDir := t.TempDir()
+		tmporc := filepath.Join(projectDir, ".tmporc")
+		content := `project_name: Minimal Project
+`
+		err = os.WriteFile(tmporc, []byte(content), 0644)
+		assert.NoError(t, err)
+
+		err = os.Chdir(projectDir)
+		assert.NoError(t, err)
+
+		hourlyRate, exportPath, err := GetProjectConfig("Minimal Project")
+		assert.NoError(t, err)
+		assert.Nil(t, hourlyRate)
+		assert.Empty(t, exportPath)
+	})
+
+	t.Run("prioritizes global project over tmporc with same name", func(t *testing.T) {
+		// Create global project
+		rate := 200.0
+		registry := &settings.ProjectsRegistry{
+			Projects: []settings.GlobalProject{
+				{
+					Name:       "Shared Name",
+					HourlyRate: &rate,
+					ExportPath: "/tmp/global",
+				},
+			},
+		}
+		err := registry.Save()
+		assert.NoError(t, err)
+
+		// Create .tmporc with same name
+		originalDir, err := os.Getwd()
+		assert.NoError(t, err)
+		defer os.Chdir(originalDir)
+
+		projectDir := t.TempDir()
+		tmporc := filepath.Join(projectDir, ".tmporc")
+		content := `project_name: Shared Name
+hourly_rate: 100.0
+export_path: /tmp/local
+`
+		err = os.WriteFile(tmporc, []byte(content), 0644)
+		assert.NoError(t, err)
+
+		err = os.Chdir(projectDir)
+		assert.NoError(t, err)
+
+		// Should get global project config
+		hourlyRate, exportPath, err := GetProjectConfig("Shared Name")
+		assert.NoError(t, err)
+		assert.NotNil(t, hourlyRate)
+		assert.Equal(t, 200.0, *hourlyRate)
+		assert.Equal(t, "/tmp/global", exportPath)
 	})
 }
