@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	logLimit      int
-	logProject    string
-	logMilestone  string
-	logToday      bool
-	logWeek       bool
+	logLimit     int
+	logProject   string
+	logMilestone string
+	logToday     bool
+	logWeek      bool
 )
 
 func LogCmd() *cobra.Command {
@@ -40,10 +40,15 @@ func LogCmd() *cobra.Command {
 			var entries []*storage.TimeEntry
 
 			if logMilestone != "" {
-				projectName, err := project.DetectConfiguredProject()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
-					os.Exit(1)
+				// if --project flag is used, ensure global project config is used
+				projectName := logProject
+				if projectName == "" {
+					detectedProject, err := project.DetectConfiguredProject()
+					if err != nil {
+						ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
+						os.Exit(1)
+					}
+					projectName = detectedProject
 				}
 				entries, err = db.GetEntriesByMilestone(projectName, logMilestone)
 			} else if logToday {

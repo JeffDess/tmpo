@@ -14,7 +14,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var showAllProjects bool
+var (
+	showAllProjects bool
+	editProjectFlag string
+)
 
 func EditCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -73,8 +76,8 @@ func EditCmd() *cobra.Command {
 
 				projectName = selectedProject
 			} else {
-				// Use current project
-				detectedProject, err := project.DetectConfiguredProject()
+				// use current project or explicit project using --project flag
+				detectedProject, err := project.DetectConfiguredProjectWithOverride(editProjectFlag)
 				if err != nil {
 					ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
 					os.Exit(1)
@@ -437,6 +440,7 @@ func EditCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&showAllProjects, "show-all-projects", false, "Show project selection before entry selection")
+	cmd.Flags().StringVarP(&editProjectFlag, "project", "p", "", "Edit entries for a specific global project")
 
 	return cmd
 }

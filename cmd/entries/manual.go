@@ -15,6 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	manualProjectFlag string
+)
+
 func getDateFormatInfo(configFormat string) (displayFormat, layout string) {
 	switch configFormat {
 	case "MM/DD/YYYY":
@@ -24,7 +28,6 @@ func getDateFormatInfo(configFormat string) (displayFormat, layout string) {
 	case "YYYY-MM-DD":
 		return "YYYY-MM-DD", "2006-01-02"
 	default:
-		// Default to MM-DD-YYYY
 		return "MM-DD-YYYY", "01-02-2006"
 	}
 }
@@ -49,7 +52,7 @@ func ManualCmd() *cobra.Command {
 			// Get date format for prompts and validation
 			dateFormatDisplay, dateFormatLayout := getDateFormatInfo(globalCfg.DateFormat)
 
-			defaultProject := detectProjectNameWithSource()
+			defaultProject := detectProjectNameWithSource(manualProjectFlag)
 
 			var projectLabel string
 			if defaultProject != "" {
@@ -243,6 +246,8 @@ func ManualCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVarP(&manualProjectFlag, "project", "p", "", "Create entry for a specific global project")
+
 	return cmd
 }
 
@@ -323,12 +328,8 @@ func normalizeAMPM(input string) string {
 	return strings.ToUpper(input)
 }
 
-func detectProjectNameWithSource() (string) {
-	if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil && cfg.ProjectName != "" {
-		return cfg.ProjectName
-	}
-
-	projectName, err := project.DetectProject()
+func detectProjectNameWithSource(explicitProject string) string {
+	projectName, err := project.DetectConfiguredProjectWithOverride(explicitProject)
 	if err != nil {
 		return ""
 	}
