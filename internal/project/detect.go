@@ -46,7 +46,13 @@ func DetectConfiguredProjectWithOverride(explicitProject string) (string, error)
 		}
 
 		if !registry.Exists(explicitProject) {
-			return "", fmt.Errorf("project '%s' not found in global registry", explicitProject)
+			// check if this project name exists in a local .tmporc to provide a helpful hint
+			if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil {
+				if strings.EqualFold(cfg.ProjectName, explicitProject) {
+					return "", fmt.Errorf("project '%s' not found in global registry.\n\nHowever, a local .tmporc file has a project named '%s'.\nTo use the local project, run the command without --project:\n  tmpo start (or the command you're trying to run)\n\nTo create a global project with this name:\n  tmpo init --global", explicitProject, cfg.ProjectName)
+				}
+			}
+			return "", fmt.Errorf("project '%s' not found in global registry.\n\nTo create this global project:\n  tmpo init --global", explicitProject)
 		}
 
 		return explicitProject, nil
