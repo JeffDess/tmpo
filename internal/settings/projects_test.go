@@ -10,12 +10,10 @@ import (
 
 func TestLoadProjects(t *testing.T) {
 	tmpDir := t.TempDir()
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
 
-	// Set temporary home directory
-	os.Setenv("HOME", tmpDir)
-	os.Setenv("TMPO_DEV", "1") // Use dev mode to avoid interfering with real data
+	// Set temporary home directory for cross-platform compatibility
+	t.Setenv("HOME", tmpDir)        // Unix/macOS
+	t.Setenv("USERPROFILE", tmpDir) // Windows
 
 	t.Run("loads empty registry when file doesn't exist", func(t *testing.T) {
 		registry, err := LoadProjects()
@@ -25,8 +23,8 @@ func TestLoadProjects(t *testing.T) {
 	})
 
 	t.Run("loads valid projects registry", func(t *testing.T) {
-		// Create .tmpo-dev directory
-		tmpoDir := filepath.Join(tmpDir, ".tmpo-dev")
+		// Create .tmpo directory
+		tmpoDir := filepath.Join(tmpDir, ".tmpo")
 		err := os.MkdirAll(tmpoDir, 0755)
 		assert.NoError(t, err)
 
@@ -58,8 +56,8 @@ func TestLoadProjects(t *testing.T) {
 	})
 
 	t.Run("handles projects without optional fields", func(t *testing.T) {
-		// Create .tmpo-dev directory
-		tmpoDir := filepath.Join(tmpDir, ".tmpo-dev")
+		// Create .tmpo directory
+		tmpoDir := filepath.Join(tmpDir, ".tmpo")
 		err := os.MkdirAll(tmpoDir, 0755)
 		assert.NoError(t, err)
 
@@ -80,7 +78,7 @@ func TestLoadProjects(t *testing.T) {
 	})
 
 	t.Run("returns error for invalid YAML", func(t *testing.T) {
-		tmpoDir := filepath.Join(tmpDir, ".tmpo-dev")
+		tmpoDir := filepath.Join(tmpDir, ".tmpo")
 		err := os.MkdirAll(tmpoDir, 0755)
 		assert.NoError(t, err)
 
@@ -97,11 +95,9 @@ func TestLoadProjects(t *testing.T) {
 
 func TestProjectsRegistrySave(t *testing.T) {
 	tmpDir := t.TempDir()
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
 
-	os.Setenv("HOME", tmpDir)
-	os.Setenv("TMPO_DEV", "1")
+	t.Setenv("HOME", tmpDir)        // Unix/macOS
+	t.Setenv("USERPROFILE", tmpDir) // Windows
 
 	t.Run("saves registry successfully", func(t *testing.T) {
 		rate := 125.0
@@ -135,8 +131,8 @@ func TestProjectsRegistrySave(t *testing.T) {
 	})
 
 	t.Run("creates directory if it doesn't exist", func(t *testing.T) {
-		// Remove .tmpo-dev directory if it exists
-		tmpoDir := filepath.Join(tmpDir, ".tmpo-dev")
+		// Remove .tmpo directory if it exists
+		tmpoDir := filepath.Join(tmpDir, ".tmpo")
 		os.RemoveAll(tmpoDir)
 
 		registry := &ProjectsRegistry{
@@ -433,24 +429,14 @@ func TestExists(t *testing.T) {
 
 func TestGetProjectsPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
 
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)        // Unix/macOS
+	t.Setenv("USERPROFILE", tmpDir) // Windows
 
-	t.Run("uses .tmpo directory in normal mode", func(t *testing.T) {
-		os.Setenv("TMPO_DEV", "0")
+	t.Run("returns correct path", func(t *testing.T) {
 		path, err := GetProjectsPath()
 		assert.NoError(t, err)
-		assert.Contains(t, path, ".tmpo")
-		assert.NotContains(t, path, ".tmpo-dev")
-	})
-
-	t.Run("uses .tmpo-dev directory in dev mode", func(t *testing.T) {
-		os.Setenv("TMPO_DEV", "1")
-		path, err := GetProjectsPath()
-		assert.NoError(t, err)
-		assert.Contains(t, path, ".tmpo-dev")
+		assert.Contains(t, path, tmpDir)
 	})
 
 	t.Run("path ends with projects.yaml", func(t *testing.T) {
