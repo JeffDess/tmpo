@@ -176,11 +176,13 @@ All user data is stored locally in:
 ```text
 ~/.tmpo/              # Production (default)
   ├── tmpo.db         # SQLite database
-  └── config.yaml     # Global configuration (optional)
+  ├── config.yaml     # Global configuration (optional)
+  └── projects.yaml   # Global projects registry (optional)
 
 ~/.tmpo-dev/          # Development (when TMPO_DEV=1)
   ├── tmpo.db         # SQLite database
-  └── config.yaml     # Global configuration (optional)
+  ├── config.yaml     # Global configuration (optional)
+  └── projects.yaml   # Global projects registry (optional)
 ```
 
 The database schema includes:
@@ -200,9 +202,14 @@ The database schema includes:
 
 When a user runs `tmpo start`, the project name is detected in this priority order:
 
-1. **`.tmporc` file** - Searches current directory and all parent directories
-2. **Git repository** - Uses `git rev-parse --show-toplevel` to find repo root
-3. **Directory name** - Falls back to current directory name
+1. **`--project` flag** - Explicitly specified global project (e.g., `tmpo start --project "My Project"`)
+2. **`.tmporc` file** - Searches current directory and all parent directories
+3. **Git repository** - Uses `git rev-parse --show-toplevel` to find repo root
+4. **Directory name** - Falls back to current directory name
+
+**Global Projects:**
+
+Users can create global projects with `tmpo init --global`, which stores project configurations in `~/.tmpo/projects.yaml`. These projects can be tracked from any directory using the `--project` flag.
 
 This logic lives in `internal/project/detect.go`.
 

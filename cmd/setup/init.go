@@ -16,135 +16,221 @@ import (
 
 var (
 	acceptDefaults bool
+	globalProject  bool
 )
 
 func InitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Initialize a .tmporc config file",
-		Long:  `Create a .tmporc configuration file in the current directory using an interactive form.`,
+		Short: "Initialize a project configuration",
+		Long:  `Create a project configuration using an interactive form. By default, creates a .tmporc file in the current directory.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ui.NewlineAbove()
 
-			if _, err := os.Stat(".tmporc"); err == nil {
-				ui.PrintError(ui.EmojiError, ".tmporc already exists in this directory")
-				ui.NewlineBelow()
+			// accept all is incompatible with initialization of global project
+			if acceptDefaults && globalProject {
+				ui.PrintError(ui.EmojiError, "Cannot use --accept-defaults with --global. Global projects require an explicit project configuration.")
 				os.Exit(1)
 			}
 
-			defaultName := detectDefaultProjectName()
-
-			var name string
-			var hourlyRate float64
-			var description string
-			var exportPath string
-
-			if acceptDefaults {
-				// Use all defaults without prompting
-				name = defaultName
-				hourlyRate = 0
-				description = ""
-				exportPath = ""
+			if globalProject {
+				initGlobalProject()
 			} else {
-				// Interactive form
-				ui.PrintSuccess(ui.EmojiInit, "Initialize Project Configuration")
-				fmt.Println()
-
-				// Project Name prompt
-				namePrompt := promptui.Prompt{
-					Label:     fmt.Sprintf("Project name (%s)", defaultName),
-					AllowEdit: true,
-				}
-
-				nameInput, err := namePrompt.Run()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-					os.Exit(1)
-				}
-
-				name = strings.TrimSpace(nameInput)
-				if name == "" {
-					name = defaultName
-				}
-
-				// Hourly Rate prompt
-				ratePrompt := promptui.Prompt{
-					Label:    "Hourly rate (press Enter to skip)",
-					Validate: validateHourlyRate,
-				}
-
-				rateInput, err := ratePrompt.Run()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-					os.Exit(1)
-				}
-
-				rateInput = strings.TrimSpace(rateInput)
-				if rateInput != "" {
-					hourlyRate, err = strconv.ParseFloat(rateInput, 64)
-					if err != nil {
-						ui.PrintError(ui.EmojiError, fmt.Sprintf("parsing hourly rate: %v", err))
-						os.Exit(1)
-					}
-				}
-
-				// Description prompt
-				descPrompt := promptui.Prompt{
-					Label: "Description (press Enter to skip)",
-				}
-
-				descInput, err := descPrompt.Run()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-					os.Exit(1)
-				}
-
-				description = strings.TrimSpace(descInput)
-
-				// Export path prompt
-				exportPathPrompt := promptui.Prompt{
-					Label: "Export path (press Enter to skip)",
-				}
-
-				exportPathInput, err := exportPathPrompt.Run()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-					os.Exit(1)
-				}
-
-				exportPath = strings.TrimSpace(exportPathInput)
+				initLocalProject()
 			}
-
-			// Create the .tmporc file
-			err := settings.CreateWithTemplate(name, hourlyRate, description, exportPath)
-			if err != nil {
-				ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
-				os.Exit(1)
-			}
-
-			fmt.Println()
-			ui.PrintSuccess(ui.EmojiSuccess, fmt.Sprintf("Created .tmporc for project %s", ui.Bold(name)))
-			if hourlyRate > 0 {
-				ui.PrintInfo(4, ui.Bold("Hourly Rate"), fmt.Sprintf("%.2f", hourlyRate))
-			}
-			if description != "" {
-				ui.PrintInfo(4, ui.Bold("Description"), description)
-			}
-			if exportPath != "" {
-				ui.PrintInfo(4, ui.Bold("Export path"), exportPath)
-			}
-
-			fmt.Println()
-			ui.PrintMuted(0, "You can edit .tmporc to customize your project settings.")
-			ui.PrintMuted(0, "Use 'tmpo config' to set global preferences like currency and time formats.")
 
 			ui.NewlineBelow()
 		},
 	}
 
 	cmd.Flags().BoolVarP(&acceptDefaults, "accept-defaults", "a", false, "Accept all defaults and skip interactive prompts")
+	cmd.Flags().BoolVarP(&globalProject, "global", "g", false, "Create a global project that can be tracked from any directory")
 
 	return cmd
+}
+
+func initLocalProject() {
+	if _, err := os.Stat(".tmporc"); err == nil {
+		ui.PrintError(ui.EmojiError, ".tmporc already exists in this directory")
+		os.Exit(1)
+	}
+
+	defaultName := detectDefaultProjectName()
+	name, hourlyRate, description, exportPath := getProjectDetails(defaultName, "Initialize Project Configuration")
+
+	// create a .tmporc file
+	err := settings.CreateWithTemplate(name, hourlyRate, description, exportPath)
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+		os.Exit(1)
+	}
+
+	fmt.Println()
+	ui.PrintSuccess(ui.EmojiSuccess, fmt.Sprintf("Created .tmporc for project %s", ui.Bold(name)))
+	printProjectDetails(hourlyRate, description, exportPath)
+
+	fmt.Println()
+	ui.PrintMuted(0, "You can edit .tmporc to customize your project settings.")
+	ui.PrintMuted(0, "Use 'tmpo config' to set global preferences like currency and time formats.")
+}
+
+func initGlobalProject() {
+	registry, err := settings.LoadProjects()
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("failed to load projects registry: %v", err))
+		os.Exit(1)
+	}
+
+	// global projects require project name type in
+	name, hourlyRate, description, exportPath := getProjectDetails("", "Initialize Global Project")
+
+	if registry.Exists(name) {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("global project '%s' already exists", name))
+		os.Exit(1)
+	}
+
+	// create the project
+	var hourlyRatePtr *float64
+	if hourlyRate > 0 {
+		hourlyRatePtr = &hourlyRate
+	}
+
+	newProject := settings.GlobalProject{
+		Name:        name,
+		HourlyRate:  hourlyRatePtr,
+		Description: description,
+		ExportPath:  exportPath,
+	}
+
+	err = registry.AddProject(newProject)
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("failed to add project: %v", err))
+		os.Exit(1)
+	}
+
+	err = registry.Save()
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("failed to save projects registry: %v", err))
+		os.Exit(1)
+	}
+
+	fmt.Println()
+	ui.PrintSuccess(ui.EmojiSuccess, fmt.Sprintf("Created global project %s", ui.Bold(name)))
+	printProjectDetails(hourlyRate, description, exportPath)
+
+	fmt.Println()
+	ui.PrintMuted(0, "You can now track time for this project from any directory:")
+	ui.PrintMuted(0, fmt.Sprintf("  tmpo start --project \"%s\"", name))
+	ui.PrintMuted(0, "")
+	ui.PrintMuted(0, "Use 'tmpo config' to set global preferences like currency and time formats.")
+}
+
+func getProjectDetails(defaultName, title string) (name string, hourlyRate float64, description, exportPath string) {
+	if acceptDefaults {
+		name = defaultName
+		hourlyRate = 0
+		description = ""
+		exportPath = ""
+		return
+	}
+
+	ui.PrintSuccess(ui.EmojiInit, title)
+	fmt.Println()
+
+	// project name prompt
+	var namePrompt promptui.Prompt
+	if defaultName != "" {
+		// local project
+		namePrompt = promptui.Prompt{
+			Label:     fmt.Sprintf("Project name (%s)", defaultName),
+			AllowEdit: true,
+		}
+	} else {
+		// global project
+		namePrompt = promptui.Prompt{
+			Label: "Project name",
+			Validate: func(input string) error {
+				if strings.TrimSpace(input) == "" {
+					return fmt.Errorf("project name is required")
+				}
+				return nil
+			},
+		}
+	}
+
+	nameInput, err := namePrompt.Run()
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+		os.Exit(1)
+	}
+
+	name = strings.TrimSpace(nameInput)
+	if name == "" && defaultName != "" {
+		name = defaultName
+	}
+
+	// hourly Rate prompt
+	ratePrompt := promptui.Prompt{
+		Label:    "Hourly rate (press Enter to skip)",
+		Validate: validateHourlyRate,
+	}
+
+	rateInput, err := ratePrompt.Run()
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+		os.Exit(1)
+	}
+
+	rateInput = strings.TrimSpace(rateInput)
+	if rateInput != "" {
+		hourlyRate, err = strconv.ParseFloat(rateInput, 64)
+		if err != nil {
+			ui.PrintError(ui.EmojiError, fmt.Sprintf("parsing hourly rate: %v", err))
+			os.Exit(1)
+		}
+	}
+
+	// description prompt
+	descPrompt := promptui.Prompt{
+		Label: "Description (press Enter to skip)",
+	}
+
+	descInput, err := descPrompt.Run()
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+		os.Exit(1)
+	}
+
+	description = strings.TrimSpace(descInput)
+
+	// export path prompt
+	exportPathPrompt := promptui.Prompt{
+		Label: "Export path (press Enter to skip)",
+	}
+
+	exportPathInput, err := exportPathPrompt.Run()
+	if err != nil {
+		ui.PrintError(ui.EmojiError, fmt.Sprintf("%v", err))
+		os.Exit(1)
+	}
+
+	exportPath = strings.TrimSpace(exportPathInput)
+
+	return
+}
+
+func printProjectDetails(hourlyRate float64, description, exportPath string) {
+	if hourlyRate > 0 {
+		ui.PrintInfo(4, ui.Bold("Hourly Rate"), fmt.Sprintf("%.2f", hourlyRate))
+	}
+
+	if description != "" {
+		ui.PrintInfo(4, ui.Bold("Description"), description)
+	}
+
+	if exportPath != "" {
+		ui.PrintInfo(4, ui.Bold("Export path"), exportPath)
+	}
 }
 
 func detectDefaultProjectName() string {
@@ -171,7 +257,7 @@ func detectDefaultProjectName() string {
 func validateHourlyRate(input string) error {
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return nil // Allow empty for optional field
+		return nil // optional field
 	}
 
 	rate, err := strconv.ParseFloat(input, 64)
@@ -189,15 +275,14 @@ func validateHourlyRate(input string) error {
 func validateCurrency(input string) error {
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return nil // Allow empty for default
+		return nil // empty for default
 	}
 
-	// Currency codes should be 3 letters
+	// check formatting for currency codes
 	if len(input) != 3 {
 		return fmt.Errorf("currency code must be 3 letters (e.g., USD, EUR, GBP)")
 	}
 
-	// Check that it's all letters
 	for _, char := range input {
 		if (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') {
 			return fmt.Errorf("currency code must contain only letters")

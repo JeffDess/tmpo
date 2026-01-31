@@ -9,10 +9,11 @@ All time tracking data and configuration is stored locally on your machine:
 ```text
 ~/.tmpo/
   ├── tmpo.db          # SQLite database with time entries
-  └── config.yaml      # Global configuration (optional)
+  ├── config.yaml      # Global configuration (optional)
+  └── projects.yaml    # Global projects registry (optional)
 ```
 
-Your data never leaves your machine. Both files can be backed up, copied, or version controlled if desired.
+Your data never leaves your machine. All files can be backed up, copied, or version controlled if desired.
 
 > [!NOTE]
 > **Contributors**, when developing tmpo with `TMPO_DEV=1` or `TMPO_DEV=true`, both files are stored in `~/.tmpo-dev/` instead to keep development work separate from your production data.
@@ -132,6 +133,139 @@ export_path: /Users/dylan/Dropbox/timesheets
 # No default (export to current directory)
 export_path: ""
 ```
+
+## Global Projects
+
+### What Are Global Projects?
+
+Global projects allow you to track time for any project from any directory without needing `.tmporc` files or Git repositories. They're perfect for:
+
+- **Consulting work** - Track multiple clients without directory structure
+- **Non-code projects** - Meetings, research, administrative tasks
+- **Flexible workflows** - Switch projects without changing directories
+- **Project portfolios** - Manage many small projects easily
+
+### Creating Global Projects
+
+Use `tmpo init --global` to create a global project:
+
+```bash
+tmpo init --global
+# [tmpo] Initialize Global Project
+# Project name: Client Consulting
+# Hourly rate (press Enter to skip): 175
+# Description (press Enter to skip): Hourly consulting for Acme Corp
+# Export path (press Enter to skip): ~/Documents/acme-timesheets
+```
+
+Or use `--accept-defaults` for quick setup:
+
+```bash
+tmpo init --global --accept-defaults
+# Uses current directory name as project name with default values
+```
+
+### Using Global Projects
+
+Once created, track global projects from anywhere:
+
+```bash
+# Track from any directory
+cd /tmp
+tmpo start --project "Client Consulting" "Architecture review"
+
+# Resume from anywhere
+cd /
+tmpo resume --project "Client Consulting"
+
+# View logs from anywhere
+tmpo log --project "Client Consulting"
+
+# Export from anywhere
+tmpo export --project "Client Consulting" --format csv
+```
+
+### The `projects.yaml` File
+
+Global projects are stored in `~/.tmpo/projects.yaml`:
+
+```yaml
+projects:
+  - name: "Client Consulting"
+    hourly_rate: 175.0
+    description: "Hourly consulting for Acme Corp"
+    export_path: "~/Documents/acme-timesheets"
+  - name: "Side Project"
+    hourly_rate: 50.0
+    description: "Personal side project"
+  - name: "Research"
+    description: "General research and learning"
+```
+
+### Configuration Fields
+
+#### `name` (required)
+
+The project name used when tracking time with the `--project` flag. Must be unique.
+
+```yaml
+name: "Client Work - Q1 2024"
+```
+
+#### `hourly_rate` (optional)
+
+Your billing rate per hour for this project. The currency symbol is determined by your global currency setting (`tmpo config`).
+
+```yaml
+hourly_rate: 150.00
+```
+
+Omit or set to `0` to disable rate tracking:
+
+```yaml
+# No hourly rate
+projects:
+  - name: "Personal Project"
+    description: "My side project"
+```
+
+#### `description` (optional)
+
+Notes or details about the project for your reference.
+
+```yaml
+description: "Web development for Acme Corp. Contact: john@acme.com"
+```
+
+#### `export_path` (optional)
+
+Default export directory for this project's data.
+
+```yaml
+export_path: "~/Documents/client-exports"
+```
+
+### Managing Global Projects
+
+You can manually edit `~/.tmpo/projects.yaml` to:
+
+- **Add projects** - Add a new entry to the `projects` list
+- **Update projects** - Modify name, rate, description, or export path
+- **Remove projects** - Delete an entry from the list
+
+**Example manual edit:**
+
+```yaml
+projects:
+  - name: "Old Project Name"
+    hourly_rate: 100.0
+  - name: "New Project"  # Added manually
+    hourly_rate: 125.0
+    description: "Newly added project"
+```
+
+> [!NOTE]
+> After manually editing, validate the YAML syntax. Invalid YAML will cause errors when loading projects.
 
 ## Project Configuration
 
@@ -254,25 +388,29 @@ export_path: ""
 
 When you run `tmpo start`, the project name is determined in this order:
 
-1. **`.tmporc` file** - If present in current directory or any parent directory
-2. **Git repository name** - The name of the git repository root folder
-3. **Current directory name** - The name of your current working directory
+1. **`--project` flag** - Explicitly specified global project (highest priority)
+2. **`.tmporc` file** - If present in current directory or any parent directory
+3. **Git repository name** - The name of the git repository root folder
+4. **Current directory name** - The name of your current working directory (fallback)
 
-This means you can override automatic detection by adding a `.tmporc` file.
+This means you can:
+
+- Use `--project` to explicitly track a global project from anywhere
+- Override automatic detection by adding a `.tmporc` file
+- Let tmpo auto-detect from Git or directory name
 
 ### Example Scenarios
 
-#### **Scenario 1:** Git repo with custom name
+#### **Scenario 1:** Explicit global project (highest priority)
 
 ```bash
-# Directory: ~/code/website-2024/
-# Git repo name: website-2024
-# No .tmporc file
-tmpo start
-# → Tracks to project "website-2024"
+# Directory: /tmp (any directory)
+# Global project "Client Work" exists in projects.yaml
+tmpo start --project "Client Work"
+# → Tracks to global project "Client Work"
 ```
 
-#### **Scenario 2:** With .tmporc override
+#### **Scenario 2:** With .tmporc file
 
 ```bash
 # Directory: ~/code/website-2024/
@@ -281,7 +419,17 @@ tmpo start
 # → Tracks to project "Acme Website"
 ```
 
-#### **Scenario 3:** Subdirectory detection
+#### **Scenario 3:** Git repo name
+
+```bash
+# Directory: ~/code/website-2024/
+# Git repo name: website-2024
+# No .tmporc file, no --project flag
+tmpo start
+# → Tracks to project "website-2024"
+```
+
+#### **Scenario 4:** Subdirectory detection
 
 ```bash
 # Directory: ~/code/my-project/src/components/
@@ -290,9 +438,58 @@ tmpo start
 # → Uses .tmporc from project root
 ```
 
+#### **Scenario 5:** Override local with global
+
+```bash
+# Directory: ~/code/website-2024/
+# .tmporc contains: project_name: "Website"
+# But you want to track to a global project instead
+tmpo start --project "Client Work"
+# → Tracks to global project "Client Work" (--project overrides .tmporc)
+```
+
 ## Multi-Project Setup
 
-### Separate Projects with Different Rates
+### Choosing Your Approach
+
+You have three options for managing multiple projects:
+
+1. **Global Projects** - Track projects from any directory (best for consulting, non-code work)
+2. **Local .tmporc Files** - Directory-based tracking (best for code projects)
+3. **Mix Both** - Use global for flexible work, local for specific codebases
+
+### Option 1: Global Projects
+
+Create global projects once, use them anywhere:
+
+```bash
+# Create global projects
+tmpo init --global
+# Project name: Client A Consulting
+# Hourly rate: 150
+
+tmpo init --global
+# Project name: Client B Development
+# Hourly rate: 175
+
+tmpo init --global
+# Project name: Internal Projects
+# Hourly rate: 100
+
+# Track from anywhere
+cd /tmp
+tmpo start --project "Client A Consulting" "Architecture review"
+tmpo start --project "Client B Development" "Feature implementation"
+```
+
+**Best for:**
+
+- Consulting and freelance work
+- Multiple small projects
+- Non-code tasks (meetings, research, admin)
+- Working across many directories
+
+### Option 2: Local .tmporc Files
 
 Create a `.tmporc` in each project directory using `tmpo init`:
 
@@ -332,6 +529,61 @@ project_name: Client Project - Web Development
 hourly_rate: 150.00
 EOF
 ```
+
+**Best for:**
+
+- Code projects in specific directories
+- Team projects with shared .tmporc files
+- Projects with consistent directory structure
+
+### Option 3: Mix Global and Local
+
+Combine both approaches for maximum flexibility:
+
+```bash
+# Global projects for flexible work
+tmpo init --global
+# Project name: Consulting Calls
+# Hourly rate: 200
+
+tmpo init --global
+# Project name: Research & Planning
+# Hourly rate: 0
+
+# Local .tmporc for main code projects
+cd ~/projects/client-website
+tmpo init
+# Project name: Client Website
+# Hourly rate: 150
+
+cd ~/projects/internal-tool
+tmpo init
+# Project name: Internal Dashboard
+# Hourly rate: 100
+```
+
+**Usage example:**
+
+```bash
+# Morning: consulting call (global project, from anywhere)
+tmpo start --project "Consulting Calls" "Client strategy session"
+tmpo stop
+
+# Afternoon: code work (local .tmporc, auto-detected)
+cd ~/projects/client-website
+tmpo start "Implementing new feature"
+tmpo stop
+
+# Evening: research (global project, from anywhere)
+cd ~/Downloads
+tmpo start --project "Research & Planning" "Exploring new frameworks"
+```
+
+**Best for:**
+
+- Mixed work types (code + consulting + meetings)
+- Flexibility without losing structure
+- Large project portfolios
 
 ### Monorepo with Sub-Projects
 
@@ -389,21 +641,26 @@ git config --global core.excludesfile ~/.gitignore_global
 # Create a backup of your time tracking database
 cp ~/.tmpo/tmpo.db ~/backups/tmpo-backup-$(date +%Y%m%d).db
 
-# Optionally backup your global config too
+# Backup your global config
 cp ~/.tmpo/config.yaml ~/backups/tmpo-config-backup-$(date +%Y%m%d).yaml
+
+# Backup your global projects registry (if you have global projects)
+cp ~/.tmpo/projects.yaml ~/backups/tmpo-projects-backup-$(date +%Y%m%d).yaml
 ```
 
 ### Moving to a New Machine
 
 ```bash
-# On old machine - backup both database and config
+# On old machine - backup all files
 cp ~/.tmpo/tmpo.db ~/tmpo-export.db
 cp ~/.tmpo/config.yaml ~/tmpo-config.yaml
+cp ~/.tmpo/projects.yaml ~/tmpo-projects.yaml  # If you have global projects
 
 # Transfer files to new machine, then:
 mkdir -p ~/.tmpo
 cp ~/tmpo-export.db ~/.tmpo/tmpo.db
 cp ~/tmpo-config.yaml ~/.tmpo/config.yaml
+cp ~/tmpo-projects.yaml ~/.tmpo/projects.yaml  # If you have global projects
 ```
 
 ### Exporting for External Tools

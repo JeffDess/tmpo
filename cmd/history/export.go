@@ -42,10 +42,15 @@ func ExportCmd() *cobra.Command {
 			var entries []*storage.TimeEntry
 
 			if exportMilestone != "" {
-				projectName, err := project.DetectConfiguredProject()
-				if err != nil {
-					ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
-					os.Exit(1)
+				// if --project flag is used, ensure global project config is used
+				projectName := exportProject
+				if projectName == "" {
+					detectedProject, err := project.DetectConfiguredProject()
+					if err != nil {
+						ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
+						os.Exit(1)
+					}
+					projectName = detectedProject
 				}
 				entries, err = db.GetEntriesByMilestone(projectName, exportMilestone)
 			} else if exportToday {

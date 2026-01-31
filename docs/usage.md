@@ -8,15 +8,22 @@ Complete reference for all tmpo commands and features.
 
 Start tracking time for the current project. Automatically detects the project name from:
 
-1. `.tmporc` configuration file (if present)
-2. Git repository name
-3. Current directory name
+1. `--project` flag (global project)
+2. `.tmporc` configuration file (if present)
+3. Git repository name
+4. Current directory name
+
+**Options:**
+
+- `--project NAME` / `-p NAME` - Track time for a specific global project
 
 **Examples:**
 
 ```bash
-tmpo start                             # Start tracking
+tmpo start                             # Start tracking (auto-detect)
 tmpo start "Fix authentication bug"    # Start with description
+tmpo start --project "Client Work"     # Track a global project from anywhere
+tmpo start -p "Consulting" "Code review"  # Short flag with description
 ```
 
 ### `tmpo stop`
@@ -49,10 +56,17 @@ tmpo pause
 
 Resume time tracking by starting a new session with the same project and description as the last paused (or stopped) session.
 
+**Options:**
+
+- `--project NAME` / `-p NAME` - Resume tracking for a specific global project
+
+**Examples:**
+
 ```bash
-tmpo resume
+tmpo resume                            # Resume current project
+tmpo resume --project "Client Work"    # Resume a global project from anywhere
 # Output:
-# [tmpo] Resumed tracking time for my-project
+# [tmpo] Resumed tracking time for Client Work
 #     Description: Implementing feature
 ```
 
@@ -61,6 +75,7 @@ tmpo resume
 - Continue work after a break
 - Resume after accidentally stopping the timer
 - Quickly restart the same task
+- Resume a global project from any directory
 
 ### `tmpo status`
 
@@ -92,6 +107,7 @@ View your time tracking history.
 ```bash
 tmpo log                            # Show recent entries
 tmpo log --limit 50                 # Show more entries
+tmpo log --project "Client Work"    # Filter by global project
 tmpo log --milestone "Sprint 1"     # Filter by milestone
 tmpo log --today                    # Show today's entries
 tmpo log --week                     # Show this week's entries
@@ -154,39 +170,61 @@ See [Configuration Guide](configuration.md#global-configuration) for more detail
 
 ### `tmpo init`
 
-Create a `.tmporc` configuration file for the current project using an interactive form. You'll be prompted to enter:
+Create a project configuration using an interactive form.
+
+**Options:**
+
+- `--global` / `-g` - Create a global project (track from any directory)
+- `--accept-defaults` / `-a` - Skip prompts and use defaults
+
+**Types of Projects:**
+
+1. **Local Projects** (default) - Creates a `.tmporc` file in current directory
+2. **Global Projects** (with `--global`) - Can be tracked from any directory
+
+You'll be prompted to enter:
 
 - **Project name** - Defaults to auto-detected name from Git repo or directory
 - **Hourly rate** - Optional billing rate (press Enter to skip)
 - **Description** - Optional project description (press Enter to skip)
 - **Export path** - Optional default export directory (press Enter to skip)
 
-**Interactive Mode (default):**
+**Examples:**
 
 ```bash
+# Create a local project (.tmporc in current directory)
 tmpo init
 # [tmpo] Initialize Project Configuration
 # Project name (my-project): [Enter custom name or press Enter for default]
 # Hourly rate (press Enter to skip): 150
 # Description (press Enter to skip): Client website redesign
 # Export path (press Enter to skip): ~/Documents/client-exports
+
+# Create a global project (track from anywhere)
+tmpo init --global
+# [tmpo] Initialize Global Project
+# Project name: Client Work
+# Hourly rate: 150
+# Description: Consulting work
+# Export path: ~/exports/client
+
+# Quick setup with defaults
+tmpo init --accept-defaults           # Local with defaults
+tmpo init --global --accept-defaults  # Global with defaults
 ```
 
-**Quick Mode:**
+**Using Global Projects:**
 
-Use the `--accept-defaults` flag to skip all prompts and use auto-detected defaults:
+Once created, track global projects from any directory:
 
 ```bash
-tmpo init --accept-defaults   # Creates .tmporc with defaults, no prompts
+cd /tmp
+tmpo start --project "Client Work" "Working on feature"
+tmpo log --project "Client Work"
+tmpo resume --project "Client Work"
 ```
 
-This creates a `.tmporc` file with:
-
-- Project name from Git repo or directory name
-- Hourly rate of 0 (disabled)
-- Empty description
-
-See [Configuration Guide](configuration.md) for details on the `.tmporc` file format and manual editing.
+See [Configuration Guide](configuration.md) for details on project configuration.
 
 ## Milestone Management
 
@@ -274,10 +312,17 @@ tmpo milestone list --all               # List all milestones
 
 Create manual time entries for past work using an interactive prompt.
 
+**Options:**
+
+- `--project NAME` / `-p NAME` - Create entry for a specific global project
+
+**Examples:**
+
 ```bash
-tmpo manual
+tmpo manual                          # Create entry for current project
+tmpo manual --project "Client Work"  # Create entry for global project
 # Prompts for:
-# - Project name
+# - Project name (pre-filled if --project is used)
 # - Start date and time (date format follows your config setting)
 # - End date and time (date format follows your config setting)
 # - Description
@@ -300,13 +345,15 @@ Edit an existing time entry using an interactive menu. Select an entry and modif
 
 **Options:**
 
+- `--project NAME` / `-p NAME` - Edit entries for a specific global project
 - `--show-all-projects` - Show project selection before entry selection
 
 **Examples:**
 
 ```bash
-tmpo edit                        # Edit entries from current project
-tmpo edit --show-all-projects    # Select project first, then entry
+tmpo edit                           # Edit entries from current project
+tmpo edit --project "Client Work"   # Edit entries for global project
+tmpo edit --show-all-projects       # Select project first, then entry
 ```
 
 **Interactive Flow:**
@@ -387,11 +434,12 @@ Export your time tracking data to CSV or JSON.
 ```bash
 tmpo export                              # Export all as CSV
 tmpo export --format json                # Export as JSON
-tmpo export --project "My Project"       # Filter by project
+tmpo export --project "Client Work"      # Filter by global project
 tmpo export --milestone "Sprint 1"       # Filter by milestone
 tmpo export --today                      # Export today's entries
 tmpo export --week                       # Export this week
 tmpo export --output timesheet.csv       # Specify output file
+tmpo export --project "Consulting" --format json  # Global project to JSON
 ```
 
 **CSV Format:**
@@ -451,6 +499,8 @@ tmpo export --week --output timesheet-$(date +%Y-%m-%d).csv
 
 ### Multi-Project Workflow
 
+**Option 1: Local .tmporc Files (directory-based)**
+
 Create a `.tmporc` file in each project directory with different hourly rates:
 
 ```bash
@@ -472,6 +522,55 @@ tmpo init
 ```
 
 Now `tmpo start` will automatically track to the correct project when you're in each directory.
+
+**Option 2: Global Projects (track from anywhere)**
+
+Create global projects once, then track from any directory:
+
+```bash
+# Create global projects
+tmpo init --global
+# Project name: Client A
+# Hourly rate: 150
+
+tmpo init --global
+# Project name: Client B
+# Hourly rate: 175
+
+tmpo init --global
+# Project name: Personal Projects
+# Hourly rate: 0
+
+# Now track from anywhere
+cd /tmp
+tmpo start --project "Client A" "Working on feature X"
+# ... work ...
+tmpo stop
+
+tmpo start --project "Client B" "Code review"
+# ... work ...
+tmpo stop
+
+# Switch projects without changing directories
+tmpo start --project "Personal Projects" "Weekend coding"
+```
+
+**Option 3: Mix Both**
+
+Use global projects for non-directory work (consulting, meetings) and local `.tmporc` files for code projects:
+
+```bash
+# Global projects for general work
+tmpo init --global
+# Project name: Consulting
+# Hourly rate: 200
+
+# Local .tmporc for specific codebases
+cd ~/projects/client-website
+tmpo init
+# Project name: Client Website
+# Hourly rate: 150
+```
 
 ### Tracking Without Descriptions
 

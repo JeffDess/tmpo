@@ -14,6 +14,7 @@
 
 - **🚀 Fast & Lightweight** - Built in Go, tmpo starts instantly and uses minimal resources
 - **🎯 Automatic Project Detection** - Detects project names from Git repos or `.tmporc` configuration files
+- **🌐 Global Projects** - Track time for any project from any directory without configuration files
 - **🎯 Milestone Tracking** - Organize time entries into sprints, releases, or project phases
 - **💾 Local & Private Storage** - All data stored locally in SQLite - your time tracking stays private
 - **📊 Rich Reporting** - View stats, export to CSV/JSON, and track hourly rates
@@ -58,6 +59,23 @@ tmpo stats
 tmpo milestone start "Sprint 1"
 ```
 
+### Track Projects From Anywhere
+
+Create global projects to track time from any directory:
+
+```bash
+# Create a global project
+tmpo init --global
+
+# Track time from anywhere on your system
+cd /tmp
+tmpo start --project "Client Work" "Implementing new feature"
+tmpo stop
+
+# View entries from anywhere
+tmpo log --project "Client Work"
+```
+
 For detailed usage and all commands, see the [Usage Guide](docs/usage.md).
 
 ## Configuration
@@ -80,14 +98,24 @@ This opens an interactive wizard to configure:
 
 ### Per-Project Settings
 
-Optionally create a `.tmporc` file in your project to customize settings:
+**Local Projects (directory-specific):**
 
 ```bash
-# Interactive form (prompts for name, rate, description)
+# Create a .tmporc file in your project directory
 tmpo init
 
 # Or skip prompts and use defaults
 tmpo init --accept-defaults
+```
+
+**Global Projects (track from anywhere):**
+
+```bash
+# Create a global project you can use from any directory
+tmpo init --global
+
+# Now track time from anywhere
+tmpo start --project "Project Name"
 ```
 
 See the [Configuration Guide](docs/configuration.md) for details.

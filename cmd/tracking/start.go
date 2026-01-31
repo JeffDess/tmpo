@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	startProjectFlag string
+)
+
 func StartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start [description]",
@@ -40,7 +44,7 @@ func StartCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			projectName, err := project.DetectConfiguredProject()
+			projectName, err := project.DetectConfiguredProjectWithOverride(startProjectFlag)
 			if err != nil {
 				ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
 				os.Exit(1)
@@ -52,8 +56,9 @@ func StartCmd() *cobra.Command {
 			}
 
 			var hourlyRate *float64
-			if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil && cfg.HourlyRate > 0 {
-				hourlyRate = &cfg.HourlyRate
+			configRate, _, err := project.GetProjectConfig(projectName)
+			if err == nil && configRate != nil {
+				hourlyRate = configRate
 			}
 
 			var milestoneName *string
@@ -71,7 +76,10 @@ func StartCmd() *cobra.Command {
 
 			ui.PrintSuccess(ui.EmojiStart, fmt.Sprintf("Started tracking time for %s", ui.Bold(entry.ProjectName)))
 
-			if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil {
+			// communicate config source to user
+			if startProjectFlag != "" {
+				ui.PrintMuted(4, "└─ Config Source: global project")
+			} else if cfg, _, err := settings.FindAndLoad(); err == nil && cfg != nil {
 				ui.PrintMuted(4, "└─ Config Source: .tmporc")
 			} else if project.IsInGitRepo() {
 				ui.PrintMuted(4, "└─ Config Source: git repository")
@@ -90,6 +98,8 @@ func StartCmd() *cobra.Command {
 			ui.NewlineBelow()
 		},
 	}
+
+	cmd.Flags().StringVarP(&startProjectFlag, "project", "p", "", "Track time for a specific global project")
 
 	return cmd
 }

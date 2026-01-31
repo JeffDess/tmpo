@@ -10,6 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	resumeProjectFlag string
+)
+
 func ResumeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resume",
@@ -39,7 +43,7 @@ func ResumeCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			projectName, err := project.DetectConfiguredProject()
+			projectName, err := project.DetectConfiguredProjectWithOverride(resumeProjectFlag)
 			if err != nil {
 				ui.PrintError(ui.EmojiError, fmt.Sprintf("detecting project: %v", err))
 				os.Exit(1)
@@ -77,6 +81,8 @@ func ResumeCmd() *cobra.Command {
 			ui.NewlineBelow()
 		},
 	}
+
+	cmd.Flags().StringVarP(&resumeProjectFlag, "project", "p", "", "Resume tracking for a specific global project")
 
 	return cmd
 }
