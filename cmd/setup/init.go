@@ -23,9 +23,15 @@ func InitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a project configuration",
-		Long:  `Create a project configuration using an interactive form. By default, creates a .tmporc file in the current directory. Use --global to create a global project that can be tracked from any directory.`,
+		Long:  `Create a project configuration using an interactive form. By default, creates a .tmporc file in the current directory.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ui.NewlineAbove()
+
+			// accept all is incompatible with initialization of global project
+			if acceptDefaults && globalProject {
+				ui.PrintError(ui.EmojiError, "Cannot use --accept-defaults with --global. Global projects require an explicit project configuration.")
+				os.Exit(1)
+			}
 
 			if globalProject {
 				initGlobalProject()
@@ -75,8 +81,8 @@ func initGlobalProject() {
 		os.Exit(1)
 	}
 
-	defaultName := detectDefaultProjectName()
-	name, hourlyRate, description, exportPath := getProjectDetails(defaultName, "Initialize Global Project")
+	// global projects require project name type in
+	name, hourlyRate, description, exportPath := getProjectDetails("", "Initialize Global Project")
 
 	if registry.Exists(name) {
 		ui.PrintError(ui.EmojiError, fmt.Sprintf("global project '%s' already exists", name))
@@ -131,10 +137,25 @@ func getProjectDetails(defaultName, title string) (name string, hourlyRate float
 	ui.PrintSuccess(ui.EmojiInit, title)
 	fmt.Println()
 
-	// project Name prompt
-	namePrompt := promptui.Prompt{
-		Label:     fmt.Sprintf("Project name (%s)", defaultName),
-		AllowEdit: true,
+	// project name prompt
+	var namePrompt promptui.Prompt
+	if defaultName != "" {
+		// local project
+		namePrompt = promptui.Prompt{
+			Label:     fmt.Sprintf("Project name (%s)", defaultName),
+			AllowEdit: true,
+		}
+	} else {
+		// global project
+		namePrompt = promptui.Prompt{
+			Label: "Project name",
+			Validate: func(input string) error {
+				if strings.TrimSpace(input) == "" {
+					return fmt.Errorf("project name is required")
+				}
+				return nil
+			},
+		}
 	}
 
 	nameInput, err := namePrompt.Run()
@@ -144,7 +165,7 @@ func getProjectDetails(defaultName, title string) (name string, hourlyRate float
 	}
 
 	name = strings.TrimSpace(nameInput)
-	if name == "" {
+	if name == "" && defaultName != "" {
 		name = defaultName
 	}
 
