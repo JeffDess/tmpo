@@ -48,10 +48,13 @@
         };
         apps.default = flake-utils.lib.mkApp { drv = package; };
         devShells.default = pkgs.mkShell {
+          TMPO_DEV = "1";
           packages = [
             goPkg
             pkgs.gopls
             pkgs.gotools
+            pkgs.goreleaser
+            pkgs.sqlite
           ];
         };
       }

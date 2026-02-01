@@ -4,6 +4,7 @@
 # Binaries for programs and plugins
 tmpo
 dist/
+result/
 *.exe
 *.exe~
 *.dll

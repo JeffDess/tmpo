@@ -25,6 +25,16 @@ Thank you for your interest in contributing to tmpo! This document provides guid
    git remote add upstream https://github.com/DylanDevelops/tmpo.git
    ```
 
+### Using Nix (optional)
+
+If you'd rather use Nix, you can enter a development shell that provides every required dependencies:
+
+```bash
+nix develop
+```
+
+Once inside the shell, `TMPO_DEV=1` is automatically enabled and you run the same commands as in any other environment.
+
 ## Development Workflow
 
 ### Building
@@ -35,6 +45,13 @@ go build -o tmpo .
 
 # Run the binary
 ./tmpo --help
+```
+
+Nix also allows to run these without entering a devshell:
+
+```bash
+nix build
+nix run . -- --help
 ```
 
 ### Development Mode
@@ -76,6 +93,9 @@ echo 'export TMPO_DEV=1' >> ~/.bashrc
 ```
 
 Then restart your terminal or run `source ~/.zshrc` (or `source ~/.bashrc`).
+
+> [!TIP]
+> In NixOS, dev move persistence can also be configured in [modules](docs/installation/linux_installation.md#nixos-module).
 
 **Benefits of development mode:**
 

@@ -27,7 +27,7 @@ buildGoModule {
     CGO_ENABLED = "0";
   };
 
-  doCheck = false;
+  doCheck = true;
 
   meta = with lib; {
     description = "Minimal CLI time tracker for developers";
