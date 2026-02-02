@@ -79,6 +79,11 @@ func TestGetChangelogUrl(t *testing.T) {
 			expected: "https://github.com/DylanDevelops/tmpo/releases/latest",
 		},
 		{
+			name:     "unstable version returns latest",
+			version:  "unstable",
+			expected: "https://github.com/DylanDevelops/tmpo/releases/latest",
+		},
+		{
 			name:     "empty version returns latest",
 			version:  "",
 			expected: "https://github.com/DylanDevelops/tmpo/releases/latest",

@@ -17,6 +17,8 @@ var (
 	Date    = "unknown"
 )
 
+var releaseVersionRegex = regexp.MustCompile(`^v?\d+\.\d+\.\d+(-[\w.]+)?$`)
+
 func VersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
@@ -54,8 +56,7 @@ func GetFormattedDate(inputDate string) string {
 func GetChangelogUrl(version string) string {
 	path := "https://github.com/DylanDevelops/tmpo"
 
-	r := regexp.MustCompile(`^v?\d+\.\d+\.\d+(-[\w.]+)?$`)
-	if !r.MatchString(version) {
+	if !isReleaseVersion(version) {
 		return fmt.Sprintf("%s/releases/latest", path)
 	}
 
@@ -63,8 +64,8 @@ func GetChangelogUrl(version string) string {
 }
 
 func checkForUpdates() {
-	// Only check if we have a valid version (not "dev" or empty)
-	if Version == "" || Version == "dev" {
+	// Only check for released semantic versions.
+	if !isReleaseVersion(Version) {
 		return
 	}
 
@@ -78,4 +79,8 @@ func checkForUpdates() {
 		fmt.Printf("%s %s\n", ui.Info("New Update Available:"), ui.Bold(strings.TrimPrefix(updateInfo.LatestVersion, "v")))
 		fmt.Printf("%s\n\n", ui.Muted(updateInfo.UpdateURL))
 	}
+}
+
+func isReleaseVersion(version string) bool {
+	return releaseVersionRegex.MatchString(version)
 }
