@@ -333,6 +333,46 @@ Add pause/resume functionality
 
 Reviews can take a few iterations, especially for large contributions. Don't be disheartened if you feel it takes time - we just want to ensure each contribution is high-quality and that any outstanding questions are resolved, captured or documented for posterity.
 
+## Distribution Packaging
+
+We appreciate packaging efforts for various package managers and distributions! However, to keep maintenance focused on the core application and avoid setting precedent for supporting every distribution method, we have the following policy:
+
+### What's Maintained In-Tree
+
+- **GoReleaser configuration** (`.goreleaser.yml`) - handles official releases for multiple platforms
+- **Core build files** - Go modules, source code, and build scripts
+
+### What Should Live Externally
+
+Distribution-specific packaging should be maintained outside this repository:
+
+- **Nix flakes and modules** - Contribute to [nixpkgs](https://github.com/NixOS/nixpkgs) or maintain in a separate repo
+- **Homebrew formulas** - Once tmpo meets requirements, we'll submit to homebrew-core
+- **Linux packages** - AUR (Arch), APT/RPM repos, Snap, Flatpak, etc.
+- **System configuration** - Systemd units, init scripts, etc.
+- **Other package managers** - Scoop (Windows), Chocolatey, etc.
+
+### Why This Policy?
+
+Maintaining distribution-specific packaging in-tree creates ongoing maintenance burden:
+
+- Each config format change requires updating multiple package definitions
+- Testing across different package managers becomes complex
+- Sets precedent for accepting every packaging request
+- Most package ecosystems prefer maintaining packages in their own repositories anyway
+
+### How to Contribute Packaging
+
+If you'd like to package tmpo for your preferred distribution:
+
+1. **Create the package** in the appropriate repository (nixpkgs, AUR, etc.)
+2. **Open an issue** with the link to your package
+3. **We'll add a link** in our installation documentation to help users find it
+
+This way, tmpo remains accessible across platforms while keeping maintenance focused on what we do best—building a great time tracking tool.
+
+We may consider dedicated support for specific platforms in the future if we see a large user base, but for now, community-maintained packages with documentation links work best for everyone.
+
 ## Reporting Issues
 
 When reporting bugs or requesting features, please:
